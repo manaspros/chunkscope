@@ -7,7 +7,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 venv/
+backend/.venv/
 .env
+!.env.example
 .pytest_cache/
 .coverage
 htmlcov/
@@ -45,3 +47,10 @@ frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
+
+# Uploads (keep directory, ignore files)
+uploads/*.pdf
+uploads/*.txt
+
+# Logs
+*.log

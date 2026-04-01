@@ -1,0 +1,12 @@
+node_modules
+.next
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.log
+build_log.txt
+server_debug.log
+playwright-report
+test-results

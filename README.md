@@ -1,156 +1,125 @@
 <div align="center">
-  <img src="https://github.com/1Ash0/chunkscope/raw/main/static/logo.png" width="120" height="120" alt="ChunkScope Logo" />
-  <h1>ChunkScope 🔭</h1>
-  <p><b>The "Inspect Element" for RAG.</b></p>
+  <h1>ChunkScope</h1>
+  <p><strong>The n8n for RAG.</strong> Visual pipeline builder with AI suggestions, code export, and live evaluation.</p>
 
-  [![Project Status: Active](https://img.shields.io/badge/Project%20Status-Active-orange.svg)](https://github.com/1Ash0/chunkscope)
   [![License: MIT](https://img.shields.io/badge/License-MIT-gold.svg)](https://opensource.org/licenses/MIT)
-  [![Tech: FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
-  [![Tech: Next.js](https://img.shields.io/badge/Frontend-Next.js-000000.svg?style=flat&logo=next.js)](https://nextjs.org/)
-  [![Vector: pgvector](https://img.shields.io/badge/Vector-pgvector-336791.svg?style=flat&logo=postgresql)](https://github.com/pgvector/pgvector)
+  [![Tech: FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com/)
+  [![Tech: Next.js](https://img.shields.io/badge/Frontend-Next.js-000000.svg?logo=next.js)](https://nextjs.org/)
+  [![Vector: pgvector](https://img.shields.io/badge/Vector-pgvector-336791.svg?logo=postgresql)](https://github.com/pgvector/pgvector)
 </div>
 
 ---
 
-## 🔭 Overview
+## Key Features
 
-ChunkScope is a high-density forensic toolkit designed for developers building modern **Retrieval-Augmented Generation (RAG)** architectures. It provides a surgical interface to inspect, visualize, and optimize every layer of your retrieval pipeline—from raw document chunking to 3D embedding space analysis.
-
-> "If RAG is a black box, ChunkScope is the flashlight."
-
----
-
-## 🌌 Core Features
-
-### 1. 🔍 Forensic Analyzer
-Deep-dive into the technical anatomy of your documents.
-- **Token Overlap Maps**: Visualize how context is preserved between chunks.
-- **Semantic Density Tracking**: Identify information-rich clusters vs. low-value noise.
-- **Multi-Method Chunking**: Toggle between `Recursive`, `Semantic`, `Code-Aware`, and `Sentence-Window` strategies.
-
-### 2. � 3D Vector Visualizer
-Explore your knowledge base in spatial coordinates.
-- **Semantic Landscape**: Uncover hidden gaps and islands in your embedding space using high-fidelity **WebGL** rendering.
-- **Source-Locked Overlays**: Interactive PDF viewer with **coordinate-locked highlights**. Click a cluster, see the page, identify the chunk.
-- **Metadata Inspection**: Inspect raw JSON metadata and token counts for every individual vector point.
-
-### 3. 🛠️ Pipeline Orchestrator
-Drag, drop, and benchmark.
-- **Modular Architecture**: Configure complex flows: `PDF Processor` ➔ `Semantic Chunker` ➔ `OpenAI Embedding` ➔ `Hybrid Retriever`.
-- **Retrieval Strategies**: Built-in support for `Hybrid Search`, `MMR (Maximal Marginal Relevance)`, `HyDE`, and `Multi-Query` expansion.
-- **Presets Gallery**: Industry-standard templates for Legal, Medical, and Technical documentation.
+- **Visual Pipeline Builder** -- n8n-style drag-and-drop interface to assemble chunking, embedding, and retrieval stages
+- **AI Suggestion Engine** -- auto-recommend chunking strategy, chunk size, embedding model, and retrieval method based on your documents
+- **Code Export** -- generate framework-agnostic Python / FastAPI code from any pipeline configuration
+- **Live Evaluation Dashboard** -- RAGAS-style metrics (faithfulness, relevance, context precision) computed in real time
+- **Side-by-Side Comparison** -- run two pipeline configurations against the same queries and diff the results
+- **Cost Calculator** -- estimate token and API costs before committing to a pipeline
+- **8 Chunking Strategies** -- Recursive, Semantic, Sentence-Window, Code-Aware, Fixed, Paragraph, Agentic, and Custom
+- **Multiple Embedding Providers** -- OpenAI, Cohere, HuggingFace, and any provider reachable through LiteLLM
+- **Hybrid Retrieval + Reranking** -- vector search, BM25, HyDE, Multi-Query, MMR, with optional cross-encoder reranking
 
 ---
 
-## 🏗️ Technical Architecture
+## Quick Start
 
-ChunkScope follows a modular micro-service inspired architecture designed for high scalability and low latency.
-
-```mermaid
-graph TD
-    subgraph Client ["Frontend (Next.js 14)"]
-        UI["React + Framer Motion"]
-        Store["Zustand State"]
-        Engine3D["Three.js / GLSL Engine"]
-    end
-
-    subgraph Service ["Backend (FastAPI)"]
-        API["REST API Layer"]
-        Executor["Pipeline Executor"]
-        Worker["Document Processor (PyMuPDF)"]
-        Chnk["Multi-Strategy Chunkers"]
-    end
-
-    subgraph Data ["Persistence Layer"]
-        PG[("PostgreSQL + pgvector")]
-        FTS["Full Text Search (TSVector)"]
-        S3["Blob Storage / Uploads"]
-    end
-
-    UI <==> API
-    API --> Executor
-    Executor --> Chnk
-    Chnk --> Worker
-    Executor --> PG
-    PG --> FTS
+```bash
+git clone https://github.com/1Ash0/chunkscope.git
+cd chunkscope
+cp .env.example .env
+# Add your API keys to .env
+docker compose up
 ```
 
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-| :--- | :--- |
-| **Backend** | FastAPI, SQLAlchemy, Alembic, Pydantic |
-| **Frontend** | Next.js, TypeScript, Tailwind CSS, Framer Motion |
-| **Visualization** | Three.js (WebGL), GLSL Custom Shaders |
-| **Database** | PostgreSQL (v15+), pgvector extension |
-| **Language** | Python 3.10+, TypeScript 5.0+ |
+Open [http://localhost:3000](http://localhost:3000) to launch the UI.
+The API docs are at [http://localhost:8000/api/docs](http://localhost:8000/api/docs).
 
 ---
 
-## ⚙️ Installation & Setup
+## Architecture
 
-### 1. Prerequisites
-- Docker (Optional) or Python 3.10 / Node 18 environments.
-- PostgreSQL with the `pgvector` extension installed.
+```
+Frontend (Next.js :3000)
+    |
+    | REST / WebSocket
+    v
+Backend (FastAPI :8000)
+    |
+    | SQLAlchemy + asyncpg
+    v
+PostgreSQL + pgvector (:5432)
+```
 
-### 2. Quick Start (Development)
+The frontend sends pipeline configurations and queries to the backend API.
+The backend orchestrates document processing, chunking, embedding, retrieval, and evaluation,
+storing vectors and metadata in PostgreSQL with the pgvector extension.
 
-**Backend Setup:**
+---
+
+## Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | Next.js 14, TypeScript, Tailwind CSS, React Flow, Zustand, Framer Motion |
+| Backend | FastAPI, SQLAlchemy (async), Pydantic, LiteLLM, LangChain |
+| Database | PostgreSQL 16, pgvector |
+| Infra | Docker Compose, Alembic migrations |
+
+---
+
+## API Endpoints
+
+All routes are under `/api/v1`. Main groups:
+
+| Group | Description |
+|---|---|
+| `/health` | Liveness check |
+| `/documents` | Upload and manage PDF/text documents |
+| `/chunks` | Chunk documents with configurable strategies |
+| `/embeddings` | Generate and store embeddings |
+| `/pipelines` | Create, update, and execute full pipelines |
+| `/presets` | Built-in and custom pipeline presets |
+| `/query` | Run retrieval queries against a pipeline |
+| `/rerank` | Cross-encoder reranking |
+| `/evaluations` | RAGAS-style evaluation metrics |
+| `/suggestions` | AI-powered configuration recommendations |
+| `/export` | Generate Python code from pipeline config |
+| `/cost` | Estimate token and API costs |
+| `/config` | Available models, strategies, and providers |
+
+Full OpenAPI spec: `http://localhost:8000/api/docs`
+
+---
+
+## Development Setup (without Docker)
+
+### Backend
+
 ```bash
-# Navigate to backend
 cd backend
-python -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run migrations and start
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt    # or: uv pip install -r requirements.txt
 alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 
-**Frontend Setup:**
+Requires PostgreSQL with pgvector. Set `DATABASE_URL` in `.env`.
+
+### Frontend
+
 ```bash
-# Navigate to frontend
 cd frontend
 npm install
-
-# Start the dev server
 npm run dev
 ```
 
-Visit `http://localhost:3000` to enter the terminal.
+Opens on [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## 🛣️ Roadmap
+## License
 
-- [ ] **Agentic Chunking**: Dynamic, LLM-driven document segmentation.
-- [ ] **Cross-Encoder Integration**: Built-in reranking benchmarks (Cohere, BGE).
-- [ ] **Custom Evaluation Datasets**: Auto-generate Q&A pairs for precision testing.
-- [ ] **Multi-Vector Support**: Multiple embeddings per chunk (ColBERT style).
-
----
-
-## 🤝 Contributing
-
-We welcome contributions of all kinds! Whether it's adding a new Chunker strategy or improving the 3D shader performance.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📜 License
-
-Distributed under the MIT License. See `LICENSE.md` for more information.
-
-<div align="center">
-  <p>Built with 🧡 for the AI Community.</p>
-</div>
+MIT -- see `LICENSE.md`.

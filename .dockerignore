@@ -1,0 +1,14 @@
+node_modules
+.next
+__pycache__
+.venv
+.git
+.env
+*.pyc
+uploads/
+.pytest_cache
+*.log
+*.txt
+test.db
+docs/
+.github/
