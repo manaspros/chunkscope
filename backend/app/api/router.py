@@ -7,11 +7,13 @@ from fastapi import APIRouter
 from app.api.v1 import (
     health_router,
     analysis_router,
+    cost_router,
     documents_router,
     chunks_router,
     embeddings_router,
     evaluation_api_router,
     evaluations_router,
+    export_router,
     config_router,
     pipelines_router,
     presets_router,
@@ -41,3 +43,5 @@ api_router.include_router(rerank_router, prefix="/rerank", tags=["Reranking"])
 api_router.include_router(evaluation_api_router, tags=["Evaluation Metrics"])
 api_router.include_router(embeddings_router, tags=["Embedding Models"])
 api_router.include_router(suggestions_router, tags=["Suggestions"])
+api_router.include_router(export_router, tags=["Code Export"])
+api_router.include_router(cost_router, tags=["Cost Calculator"])
