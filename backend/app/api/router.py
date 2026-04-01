@@ -19,6 +19,7 @@ from app.api.v1 import (
     pipeline_routes,
     query_router,
     rerank_router,
+    suggestions_router,
 )
 
 # Main API router
@@ -39,3 +40,4 @@ api_router.include_router(config_router, tags=["config"])
 api_router.include_router(rerank_router, prefix="/rerank", tags=["Reranking"])
 api_router.include_router(evaluation_api_router, tags=["Evaluation Metrics"])
 api_router.include_router(embeddings_router, tags=["Embedding Models"])
+api_router.include_router(suggestions_router, tags=["Suggestions"])
