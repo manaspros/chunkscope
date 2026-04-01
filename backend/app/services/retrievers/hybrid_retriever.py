@@ -67,8 +67,9 @@ class HybridRetriever(BaseRetriever):
 
     async def _keyword_search(self, query_text: str, limit: int, document_id: UUID = None) -> List[Dict]:
         """Keyword search using PostgreSQL full-text search."""
-        # Clean query for tsquery
-        query_words = " & ".join(text(f"'{word}'").text for word in query_text.split() if word)
+        # Clean query for tsquery: join sanitized words with & operator
+        words = [word.strip() for word in query_text.split() if word.strip()]
+        query_words = " & ".join(words)
         if not query_words:
             return []
             

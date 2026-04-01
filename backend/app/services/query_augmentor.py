@@ -1,51 +1,65 @@
 import logging
 import json
-from typing import List, Dict, Any, Optional
-from openai import AsyncOpenAI
-from app.config import settings
+from collections import OrderedDict
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
+
+# Maximum number of entries in the LRU cache
+_CACHE_MAX_SIZE = 1000
+
+
+class _LRUCache:
+    """Simple thread-safe-ish LRU cache backed by an OrderedDict."""
+
+    def __init__(self, max_size: int = _CACHE_MAX_SIZE):
+        self._cache: OrderedDict[str, str] = OrderedDict()
+        self._max_size = max_size
+
+    def get(self, key: str) -> Optional[str]:
+        if key in self._cache:
+            self._cache.move_to_end(key)
+            return self._cache[key]
+        return None
+
+    def put(self, key: str, value: str) -> None:
+        if key in self._cache:
+            self._cache.move_to_end(key)
+        self._cache[key] = value
+        if len(self._cache) > self._max_size:
+            self._cache.popitem(last=False)
+
 
 class QueryAugmentor:
     """
     Service for augmenting user queries using LLMs.
     Supports Multi-Query generation, HyDE, and Query Expansion.
+    Uses LiteLLM via the unified llm_service.
     """
-    
-    _cache = {}
 
-    def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or settings.openai_api_key
-        if not self.api_key:
-            logger.warning("OpenAI API key not found. Query augmentation will run in simulation mode.")
-            self.client = None
-        else:
-            self.client = AsyncOpenAI(api_key=self.api_key)
+    _cache = _LRUCache()
 
     async def _get_completion(self, system_prompt: str, user_prompt: str, cache_key: str) -> str:
-        """Helper to get completion with simple in-memory caching."""
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-            
-        if not self.client:
-            return "SIMULATED RESPONSE: No API Key provided."
+        """Helper to get completion with bounded LRU caching."""
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            return cached
 
         try:
-            response = await self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
+            from app.services.llm_service import llm_service
+
+            content = await llm_service.generate(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+                model="gpt-4o-mini",
                 temperature=0.0,
-                max_tokens=300
+                max_tokens=300,
             )
-            content = response.choices[0].message.content
-            self._cache[cache_key] = content
+            self._cache.put(cache_key, content)
             return content
         except Exception as e:
             logger.error(f"LLM augmentation failed: {e}")
-            return user_prompt # Fallback to original
+            return user_prompt  # Fallback to original
 
     async def augment_multi_query(self, query: str, num_variants: int = 3) -> List[str]:
         """Generate multiple variants of the query."""
@@ -56,21 +70,21 @@ class QueryAugmentor:
         )
         user_prompt = f"Original Query: {query}"
         cache_key = f"multi_{query}_{num_variants}"
-        
+
         response_text = await self._get_completion(system_prompt, user_prompt, cache_key)
-        
+
         try:
             # Try to parse as JSON list
             variants = json.loads(response_text)
             if isinstance(variants, list):
                 # Ensure original is included if not present
                 if query not in variants:
-                    variants = [query] + variants[:num_variants-1]
+                    variants = [query] + variants[:num_variants - 1]
                 return [str(v) for v in variants]
-        except:
+        except Exception:
             # Fallback parsing
-            lines = [l.strip().strip('"') for l in response_text.split('\n') if l.strip()]
-            variants = [l for l in lines if l and not l.startswith('[') and not l.startswith(']')]
+            lines = [line.strip().strip('"') for line in response_text.split('\n') if line.strip()]
+            variants = [line for line in lines if line and not line.startswith('[') and not line.startswith(']')]
             if not variants:
                 return [query]
             return variants[:num_variants]
@@ -84,7 +98,7 @@ class QueryAugmentor:
         )
         user_prompt = f"Query: {query}"
         cache_key = f"hyde_{query}"
-        
+
         return await self._get_completion(system_prompt, user_prompt, cache_key)
 
     async def augment_expansion(self, query: str) -> str:
@@ -96,7 +110,8 @@ class QueryAugmentor:
         )
         user_prompt = f"Query: {query}"
         cache_key = f"expand_{query}"
-        
+
         return await self._get_completion(system_prompt, user_prompt, cache_key)
+
 
 query_augmentor = QueryAugmentor()

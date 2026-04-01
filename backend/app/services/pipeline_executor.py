@@ -14,10 +14,6 @@ try:
 except ImportError:
     fitz = None
 
-try:
-    from openai import AsyncOpenAI
-except ImportError:
-    AsyncOpenAI = None
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -244,26 +240,11 @@ class PipelineExecutor:
                 logger.error(f"Failed to load PDF: {e}")
                 raise e
 
-        # 4. FAST PATH: Real Logic for LLM Generator
+        # 4. FAST PATH: Real Logic for LLM Generator (via LiteLLM)
         if node.type == "llm":
-            from app.config import settings
-            # Secure Key Logic: Node Config > Env Var
-            api_key = node.config.get("apiKey") or settings.openai_api_key
-            
-            if not api_key:
-                logger.warning(f"No API Key provided for LLM node {node_id}. Using simulation.")
-                await asyncio.sleep(0.5)
-                return {
-                    "node_type": "llm",
-                    "response": "Simulation: No API Key provided (Set in Node or .env).",
-                    "model": "simulated"
-                }
-            
             try:
-                if not AsyncOpenAI:
-                    raise ImportError("openai package is not installed.")
-                client = AsyncOpenAI(api_key=api_key)
-                
+                from app.services.llm_service import llm_service
+
                 # Construct Context
                 context_str = ""
                 for parent_id, result in inputs.items():
@@ -275,8 +256,11 @@ class PipelineExecutor:
                         elif "response" in result:
                             context_str += f"\nPREV OUTPUT ({parent_id}):\n{result['response']}\n"
                         elif "chunks" in result:
-                             # Flatten chunks for context
-                             text_chunks = [c['text'] for c in result['chunks'][:3]] # Take first 3
+                             # Flatten chunks for context (handle both dicts and ORM objects)
+                             text_chunks = [
+                                 c['text'] if isinstance(c, dict) else c.text
+                                 for c in result['chunks'][:3]
+                             ]  # Take first 3
                              context_str += f"\nCHUNKS ({parent_id}):\n{' '.join(text_chunks)}...\n"
 
                 if not context_str:
@@ -284,24 +268,22 @@ class PipelineExecutor:
 
                 system_prompt = node.config.get("systemPrompt", "You are a helpful assistant.")
                 user_prompt = f"Context: {context_str}\n\nTask: Summarize this or answer user query."
+                model = node.config.get("model", "gpt-4o-mini")
 
-                response = await client.chat.completions.create(
-                    model=node.config.get("model", "gpt-3.5-turbo"),
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    max_tokens=500
+                response_text = await llm_service.generate(
+                    prompt=user_prompt,
+                    system_prompt=system_prompt,
+                    model=model,
+                    max_tokens=500,
                 )
-                
+
                 return {
                     "node_type": "llm",
-                    "response": response.choices[0].message.content,
-                    "model": response.model,
-                    "usage": response.usage.total_tokens
+                    "response": response_text,
+                    "model": model,
                 }
             except Exception as e:
-                logger.error(f"OpenAI Call Failed: {e}")
+                logger.error(f"LLM Call Failed: {e}")
                 raise e
 
         # 5. FAST PATH: Real Logic for Splitter
@@ -354,8 +336,11 @@ class PipelineExecutor:
                      logger.warning("No chunks input for embedder.")
                      return {"node_type": "embedder", "embeddings_count": 0}
 
-                # Extract text list
-                texts = [c['text'] for c in all_chunks]
+                # Extract text list (handle both dicts and ORM Chunk objects)
+                texts = [
+                    c['text'] if isinstance(c, dict) else c.text
+                    for c in all_chunks
+                ]
                 
                 # Get provider and model from config
                 provider = node.config.get("provider", "openai")
