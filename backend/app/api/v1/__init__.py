@@ -5,6 +5,8 @@ from app.api.v1.analysis import router as analysis_router
 from app.api.v1.chunks import router as chunks_router
 from app.api.v1.config import router as config_router
 from app.api.v1.documents import router as documents_router
+from app.api.v1.embeddings import router as embeddings_router
+from app.api.v1.evaluation_api import router as evaluation_api_router
 from app.api.v1.evaluations import router as evaluations_router
 from app.api.v1.health import router as health_router
 from app.api.v1.pipeline_routes import router as pipeline_routes
@@ -19,6 +21,8 @@ __all__ = [
     "chunks_router",
     "config_router",
     "documents_router",
+    "embeddings_router",
+    "evaluation_api_router",
     "evaluations_router",
     "health_router",
     "pipeline_routes",

@@ -9,6 +9,8 @@ from app.api.v1 import (
     analysis_router,
     documents_router,
     chunks_router,
+    embeddings_router,
+    evaluation_api_router,
     evaluations_router,
     config_router,
     pipelines_router,
@@ -35,3 +37,5 @@ api_router.include_router(evaluations_router, tags=["evaluations"])
 api_router.include_router(query_router, tags=["query"])
 api_router.include_router(config_router, tags=["config"])
 api_router.include_router(rerank_router, prefix="/rerank", tags=["Reranking"])
+api_router.include_router(evaluation_api_router, tags=["Evaluation Metrics"])
+api_router.include_router(embeddings_router, tags=["Embedding Models"])
