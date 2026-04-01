@@ -1,3 +1,5 @@
+import threading
+
 import numpy as np
 import spacy
 from typing import List, Optional, Dict, Any
@@ -14,35 +16,41 @@ class SemanticChunker(BaseChunker):
     Semantic chunking using SentenceTransformers and adaptive thresholding.
     follows the 'Percentile-Based Gradient Splitting' design.
     """
-    
+
     _model_instance: Optional[SentenceTransformer] = None
     _nlp_instance: Optional[spacy.language.Language] = None
-    
+    _model_lock: threading.Lock = threading.Lock()
+    _nlp_lock: threading.Lock = threading.Lock()
+
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         self.model_name = model_name
         self._ensure_model_loaded()
         self._ensure_spacy_loaded()
 
     def _ensure_model_loaded(self):
-        """Lazy load the embedding model."""
+        """Lazy load the embedding model with thread-safe double-checked locking."""
         if SemanticChunker._model_instance is None:
-            logger.info("loading_embedding_model", model=self.model_name)
-            try:
-                SemanticChunker._model_instance = SentenceTransformer(self.model_name)
-            except Exception as e:
-                logger.error("model_load_failed", error=str(e))
-                raise AppException(f"Failed to load embedding model: {str(e)}", 500)
+            with SemanticChunker._model_lock:
+                if SemanticChunker._model_instance is None:
+                    logger.info("loading_embedding_model", model=self.model_name)
+                    try:
+                        SemanticChunker._model_instance = SentenceTransformer(self.model_name)
+                    except Exception as e:
+                        logger.error("model_load_failed", error=str(e))
+                        raise AppException(f"Failed to load embedding model: {str(e)}", 500)
 
     def _ensure_spacy_loaded(self):
-        """Lazy load Spacy model."""
+        """Lazy load Spacy model with thread-safe double-checked locking."""
         if SemanticChunker._nlp_instance is None:
-            try:
-                SemanticChunker._nlp_instance = spacy.load("en_core_web_sm")
-            except OSError:
-                logger.info("downloading_spacy_model", model="en_core_web_sm")
-                from spacy.cli import download
-                download("en_core_web_sm")
-                SemanticChunker._nlp_instance = spacy.load("en_core_web_sm")
+            with SemanticChunker._nlp_lock:
+                if SemanticChunker._nlp_instance is None:
+                    try:
+                        SemanticChunker._nlp_instance = spacy.load("en_core_web_sm")
+                    except OSError:
+                        logger.info("downloading_spacy_model", model="en_core_web_sm")
+                        from spacy.cli import download
+                        download("en_core_web_sm")
+                        SemanticChunker._nlp_instance = spacy.load("en_core_web_sm")
 
     @property
     def model(self) -> SentenceTransformer:

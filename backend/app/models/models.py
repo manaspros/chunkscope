@@ -63,6 +63,7 @@ class ChunkingMethod(str, PyEnum):
     TABLE = "table"
     HEADING = "heading"
     AGENTIC = "agentic"
+    CONTEXTUAL = "contextual"
     # Added for presets
     PARAGRAPH_BASED = "paragraph_based"
     HEADING_BASED = "heading_based"
