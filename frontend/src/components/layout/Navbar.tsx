@@ -21,22 +21,34 @@ export function Navbar() {
 
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
                     <Link
-                        href="/presets"
-                        className={cn("hover:text-white transition-colors", isActive('/presets') && "text-white font-semibold")}
-                    >
-                        Templates
-                    </Link>
-                    <Link
                         href="/pipeline"
                         className={cn("hover:text-white transition-colors", isActive('/pipeline') && "text-white font-semibold")}
                     >
                         Builder
                     </Link>
                     <Link
+                        href="/suggestions"
+                        className={cn("hover:text-white transition-colors", isActive('/suggestions') && "text-white font-semibold")}
+                    >
+                        AI Suggestions
+                    </Link>
+                    <Link
+                        href="/evaluation"
+                        className={cn("hover:text-white transition-colors", isActive('/evaluation') && "text-white font-semibold")}
+                    >
+                        Evaluation
+                    </Link>
+                    <Link
                         href="/visualizer"
                         className={cn("hover:text-white transition-colors", isActive('/visualizer') && "text-white font-semibold")}
                     >
                         Visualizer
+                    </Link>
+                    <Link
+                        href="/presets"
+                        className={cn("hover:text-white transition-colors", isActive('/presets') && "text-white font-semibold")}
+                    >
+                        Templates
                     </Link>
                 </nav>
 

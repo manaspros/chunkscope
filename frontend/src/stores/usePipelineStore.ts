@@ -10,49 +10,93 @@ import {
     addEdge
 } from 'reactflow';
 
+export type NodeExecutionState = 'idle' | 'running' | 'complete' | 'error';
+
+export interface NodeDataPreview {
+    type: string;
+    data: any;
+    timestamp: number;
+}
+
 interface PipelineState {
+    // Pipeline metadata
+    pipelineName: string;
+    pipelineId: string | null;
+
+    // Canvas state
     nodes: Node[];
     edges: Edge[];
+    selectedNodeId: string | null;
+
+    // Execution state
+    executionState: Record<string, NodeExecutionState>;
+    nodePreviewData: Record<string, NodeDataPreview>;
+    isExecuting: boolean;
+    executionError: string | null;
+
+    // History
     history: { nodes: Node[]; edges: Edge[] }[];
     future: { nodes: Node[]; edges: Edge[] }[];
 
-    // Actions
+    // Actions - Canvas
     setNodes: (nodes: Node[]) => void;
     setEdges: (edges: Edge[]) => void;
     onNodesChange: (changes: NodeChange[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
     onConnect: (connection: Connection) => void;
     addNode: (node: Node) => void;
+    removeNode: (nodeId: string) => void;
     updateNodeData: (nodeId: string, data: any) => void;
+    selectNode: (nodeId: string | null) => void;
+    connectNodes: (sourceId: string, targetId: string) => void;
+
+    // Actions - Pipeline metadata
+    setPipelineName: (name: string) => void;
+    setPipelineId: (id: string | null) => void;
+
+    // Actions - Execution
+    setNodeExecutionState: (nodeId: string, state: NodeExecutionState) => void;
+    setNodePreviewData: (nodeId: string, preview: NodeDataPreview) => void;
+    setIsExecuting: (executing: boolean) => void;
+    setExecutionError: (error: string | null) => void;
+    resetExecution: () => void;
 
     // History Actions
     undo: () => void;
     redo: () => void;
     saveHistory: () => void;
+    clearCanvas: () => void;
 }
 
 export const usePipelineStore = create<PipelineState>((set, get) => ({
+    pipelineName: 'Untitled Pipeline',
+    pipelineId: null,
+
     nodes: [],
     edges: [],
+    selectedNodeId: null,
+
+    executionState: {},
+    nodePreviewData: {},
+    isExecuting: false,
+    executionError: null,
+
     history: [],
     future: [],
 
     saveHistory: () => {
         const { nodes, edges, history } = get();
-        // Limit history to 20 steps
-        const newHistory = [...history, { nodes, edges }].slice(-20);
+        const newHistory = [...history, { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }].slice(-20);
         set({ history: newHistory, future: [] });
     },
 
-    setNodes: (nodes) => set({ nodes }),
+    setPipelineName: (name) => set({ pipelineName: name }),
+    setPipelineId: (id) => set({ pipelineId: id }),
 
+    setNodes: (nodes) => set({ nodes }),
     setEdges: (edges) => set({ edges }),
 
     onNodesChange: (changes) => {
-        // We only save history for "important" changes? 
-        // For simplicity, we save before applying if history is requested,
-        // but ReactFlow triggers changes continuously during drag.
-        // Usually, we save onDragStop.
         set({
             nodes: applyNodeChanges(changes, get().nodes),
         });
@@ -67,7 +111,11 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
     onConnect: (connection) => {
         get().saveHistory();
         set({
-            edges: addEdge(connection, get().edges),
+            edges: addEdge({
+                ...connection,
+                animated: true,
+                style: { stroke: '#6366f1', strokeWidth: 2 },
+            }, get().edges),
         });
     },
 
@@ -75,6 +123,15 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
         get().saveHistory();
         set({
             nodes: [...get().nodes, node],
+        });
+    },
+
+    removeNode: (nodeId) => {
+        get().saveHistory();
+        set({
+            nodes: get().nodes.filter((n) => n.id !== nodeId),
+            edges: get().edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+            selectedNodeId: get().selectedNodeId === nodeId ? null : get().selectedNodeId,
         });
     },
 
@@ -86,6 +143,55 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
                 }
                 return node;
             }),
+        });
+    },
+
+    selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
+
+    connectNodes: (sourceId, targetId) => {
+        get().saveHistory();
+        const edge: Edge = {
+            id: `e-${sourceId}-${targetId}`,
+            source: sourceId,
+            target: targetId,
+            animated: true,
+            style: { stroke: '#6366f1', strokeWidth: 2 },
+        };
+        set({ edges: [...get().edges, edge] });
+    },
+
+    setNodeExecutionState: (nodeId, state) => {
+        set({
+            executionState: { ...get().executionState, [nodeId]: state },
+        });
+    },
+
+    setNodePreviewData: (nodeId, preview) => {
+        set({
+            nodePreviewData: { ...get().nodePreviewData, [nodeId]: preview },
+        });
+    },
+
+    setIsExecuting: (executing) => set({ isExecuting: executing }),
+    setExecutionError: (error) => set({ executionError: error }),
+
+    resetExecution: () => {
+        set({
+            executionState: {},
+            nodePreviewData: {},
+            isExecuting: false,
+            executionError: null,
+        });
+    },
+
+    clearCanvas: () => {
+        get().saveHistory();
+        set({
+            nodes: [],
+            edges: [],
+            selectedNodeId: null,
+            executionState: {},
+            nodePreviewData: {},
         });
     },
 

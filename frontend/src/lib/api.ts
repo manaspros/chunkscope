@@ -87,6 +87,50 @@ export const chunksApi = {
     }
 };
 
+export const suggestApi = {
+    profileDocument: async (text: string) => {
+        const response = await apiClient.post('/api/v1/suggest/profile', { text });
+        return response.data;
+    },
+    recommend: async (text: string) => {
+        const response = await apiClient.post('/api/v1/suggest/recommend', { text });
+        return response.data;
+    },
+    explain: async (recommendation: any) => {
+        const response = await apiClient.post('/api/v1/suggest/explain', recommendation);
+        return response.data;
+    },
+};
+
+export const embeddingsApi = {
+    getModels: async () => {
+        const response = await apiClient.get('/api/v1/embeddings/models');
+        return response.data;
+    },
+};
+
+export const evaluateApi = {
+    run: async (data: { question: string; ground_truth?: string }) => {
+        const response = await apiClient.post('/api/v1/evaluate/run', data);
+        return response.data;
+    },
+    chunkQuality: async (data?: { chunks?: string[] }) => {
+        const response = await apiClient.post('/api/v1/evaluate/chunk-quality', data || {});
+        return response.data;
+    },
+};
+
+export const costApi = {
+    estimateIngestion: async (data: any) => {
+        const response = await apiClient.post('/api/v1/cost/estimate-ingestion', data);
+        return response.data;
+    },
+    estimateQuery: async (data: any) => {
+        const response = await apiClient.post('/api/v1/cost/estimate-query', data);
+        return response.data;
+    },
+};
+
 export const analyzerApi = {
     analyzeDocument: async (file: File) => {
         const formData = new FormData();
