@@ -6,8 +6,6 @@ from app.models import Document, Pipeline, ExecutionLog
 @pytest.mark.asyncio
 async def test_full_rag_pipeline_flow(
     client: AsyncClient,
-    auth_headers: dict,
-    test_user,
 ):
     """
     Integration Test: Full user journey.
@@ -16,14 +14,13 @@ async def test_full_rag_pipeline_flow(
     3. Execute Pipeline
     4. Verify Execution Success
     """
-    
+
     # 1. Upload Document
-    # We'll simulate a small text file upload
     files = {
         "file": ("e2e_test.txt", b"This is an E2E test document for ChunkScope.", "text/plain")
     }
-    
-    doc_resp = await client.post("/api/v1/documents/upload", headers=auth_headers, files=files)
+
+    doc_resp = await client.post("/api/v1/documents/upload", files=files)
     assert doc_resp.status_code == 201
     doc_id = doc_resp.json()["id"]
 
@@ -38,8 +35,8 @@ async def test_full_rag_pipeline_flow(
         "edges": [{"id": "e1-2", "source": "n1", "target": "n2"}],
         "settings": {}
     }
-    
-    create_resp = await client.post("/api/v1/pipelines", headers=auth_headers, json=pipeline_data)
+
+    create_resp = await client.post("/api/v1/pipelines", json=pipeline_data)
     assert create_resp.status_code == 201
     pipeline_id = create_resp.json()["id"]
 
@@ -48,17 +45,14 @@ async def test_full_rag_pipeline_flow(
         "document_id": doc_id,
         "options": {"create_version": True}
     }
-    exec_resp = await client.post(f"/api/v1/pipelines/{pipeline_id}/execute", headers=auth_headers, json=exec_data)
+    exec_resp = await client.post(f"/api/v1/pipelines/{pipeline_id}/execute", json=exec_data)
     assert exec_resp.status_code == 202
     execution_id = exec_resp.json()["execution_id"]
 
     # 4. Monitor Execution (Poll)
-    # Since we don't have a background worker running in this test environment, 
-    # the status will likely stay 'queued' unless the endpoint runs it synchronously.
-    # Our current backend logic has a #TODO for Celery.
-    status_resp = await client.get(f"/api/v1/pipelines/{pipeline_id}/executions", headers=auth_headers)
+    status_resp = await client.get(f"/api/v1/pipelines/{pipeline_id}/executions")
     assert status_resp.status_code == 200
     executions = status_resp.json()["items"]
     assert any(str(ex["id"]) == str(execution_id) for ex in executions)
-    
+
     print(f"E2E Integration Success: Doc {doc_id} -> Pipeline {pipeline_id} -> Execution {execution_id}")

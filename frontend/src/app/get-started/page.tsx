@@ -13,7 +13,7 @@ export default function GetStartedPage() {
                         Ready to Optimize Your RAG?
                     </h1>
                     <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
-                        Join thousands of AI engineers who use ChunkScope to visualize embeddings, debug retrieval, and build better pipelines.
+                        Use ChunkScope to visualize embeddings, debug retrieval, and build better pipelines.
                     </p>
                 </div>
 
@@ -24,14 +24,14 @@ export default function GetStartedPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
-                    <Link href="/login?tab=register">
+                    <Link href="/dashboard">
                         <Button size="lg" className="h-14 px-8 rounded-full text-lg bg-white text-black hover:bg-zinc-200 font-bold">
-                            Create Free Account <ArrowRight className="ml-2 h-5 w-5" />
+                            Go to Dashboard <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
                     </Link>
-                    <Link href="/login">
+                    <Link href="/visualizer">
                         <Button variant="ghost" size="lg" className="h-14 px-8 rounded-full text-lg text-zinc-400 hover:text-white">
-                            I already have an account
+                            Launch Visualizer
                         </Button>
                     </Link>
                 </div>

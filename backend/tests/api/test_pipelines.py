@@ -6,14 +6,13 @@ import pytest_asyncio
 from httpx import AsyncClient
 from uuid import uuid4
 
-from app.models import User, Document, Pipeline, DocumentType, PipelineStatus
+from app.models import Document, Pipeline, DocumentType, PipelineStatus
 
 
 @pytest_asyncio.fixture
-async def test_pipeline(test_db, test_user: User) -> Pipeline:
+async def test_pipeline(test_db) -> Pipeline:
     """Create a test pipeline."""
     pipeline = Pipeline(
-        user_id=test_user.id,
         name="Test Pipeline",
         description="A test pipeline",
         nodes=[
@@ -32,10 +31,9 @@ async def test_pipeline(test_db, test_user: User) -> Pipeline:
 
 
 @pytest_asyncio.fixture
-async def test_document(test_db, test_user: User) -> Document:
+async def test_document(test_db) -> Document:
     """Create a test document."""
     doc = Document(
-        user_id=test_user.id,
         filename="test123.pdf",
         original_filename="test.pdf",
         file_path="./uploads/test123.pdf",
@@ -55,11 +53,11 @@ async def test_document(test_db, test_user: User) -> Document:
 # ============================================
 
 @pytest.mark.asyncio
-async def test_create_pipeline(client: AsyncClient, auth_headers: dict):
+async def test_create_pipeline(client: AsyncClient):
     """Test creating a pipeline."""
     response = await client.post(
         "/api/v1/pipelines",
-        headers=auth_headers,
+        ,
         json={
             "name": "New Pipeline",
             "description": "Test description",
@@ -77,9 +75,9 @@ async def test_create_pipeline(client: AsyncClient, auth_headers: dict):
 
 
 @pytest.mark.asyncio
-async def test_list_pipelines(client: AsyncClient, auth_headers: dict, test_pipeline: Pipeline):
+async def test_list_pipelines(client: AsyncClient, test_pipeline: Pipeline):
     """Test listing pipelines."""
-    response = await client.get("/api/v1/pipelines", headers=auth_headers)
+    response = await client.get("/api/v1/pipelines")
     
     assert response.status_code == 200
     data = response.json()
@@ -87,11 +85,11 @@ async def test_list_pipelines(client: AsyncClient, auth_headers: dict, test_pipe
 
 
 @pytest.mark.asyncio
-async def test_get_pipeline(client: AsyncClient, auth_headers: dict, test_pipeline: Pipeline):
+async def test_get_pipeline(client: AsyncClient, test_pipeline: Pipeline):
     """Test getting a specific pipeline."""
     response = await client.get(
         f"/api/v1/pipelines/{test_pipeline.id}",
-        headers=auth_headers,
+        ,
     )
     
     assert response.status_code == 200
@@ -100,11 +98,11 @@ async def test_get_pipeline(client: AsyncClient, auth_headers: dict, test_pipeli
 
 
 @pytest.mark.asyncio
-async def test_update_pipeline(client: AsyncClient, auth_headers: dict, test_pipeline: Pipeline):
+async def test_update_pipeline(client: AsyncClient, test_pipeline: Pipeline):
     """Test updating a pipeline."""
     response = await client.patch(
         f"/api/v1/pipelines/{test_pipeline.id}",
-        headers=auth_headers,
+        ,
         json={"name": "Updated Name"},
     )
     
@@ -114,11 +112,11 @@ async def test_update_pipeline(client: AsyncClient, auth_headers: dict, test_pip
 
 
 @pytest.mark.asyncio
-async def test_delete_pipeline(client: AsyncClient, auth_headers: dict, test_pipeline: Pipeline):
+async def test_delete_pipeline(client: AsyncClient, test_pipeline: Pipeline):
     """Test deleting a pipeline."""
     response = await client.delete(
         f"/api/v1/pipelines/{test_pipeline.id}",
-        headers=auth_headers,
+        ,
     )
     
     assert response.status_code == 200
@@ -131,14 +129,14 @@ async def test_delete_pipeline(client: AsyncClient, auth_headers: dict, test_pip
 @pytest.mark.asyncio
 async def test_execute_pipeline(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
     test_pipeline: Pipeline,
     test_document: Document,
 ):
     """Test executing a pipeline."""
     response = await client.post(
         f"/api/v1/pipelines/{test_pipeline.id}/execute",
-        headers=auth_headers,
+        ,
         json={
             "document_id": str(test_document.id),
             "options": {
@@ -157,15 +155,14 @@ async def test_execute_pipeline(
 @pytest.mark.asyncio
 async def test_execute_pipeline_empty_nodes(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
     test_db,
-    test_user: User,
+    ,
     test_document: Document,
 ):
     """Test error when pipeline has no nodes."""
     # Create empty pipeline
     empty_pipeline = Pipeline(
-        user_id=test_user.id,
         name="Empty Pipeline",
         nodes=[],
         edges=[],
@@ -177,7 +174,7 @@ async def test_execute_pipeline_empty_nodes(
     
     response = await client.post(
         f"/api/v1/pipelines/{empty_pipeline.id}/execute",
-        headers=auth_headers,
+        ,
         json={"document_id": str(test_document.id)},
     )
     
@@ -188,14 +185,14 @@ async def test_execute_pipeline_empty_nodes(
 @pytest.mark.asyncio
 async def test_execute_pipeline_document_not_found(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
     test_pipeline: Pipeline,
 ):
     """Test error when document doesn't exist."""
     fake_id = uuid4()
     response = await client.post(
         f"/api/v1/pipelines/{test_pipeline.id}/execute",
-        headers=auth_headers,
+        ,
         json={"document_id": str(fake_id)},
     )
     
@@ -205,13 +202,13 @@ async def test_execute_pipeline_document_not_found(
 @pytest.mark.asyncio
 async def test_list_executions(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
     test_pipeline: Pipeline,
 ):
     """Test listing pipeline executions."""
     response = await client.get(
         f"/api/v1/pipelines/{test_pipeline.id}/executions",
-        headers=auth_headers,
+        ,
     )
     
     assert response.status_code == 200

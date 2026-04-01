@@ -2,16 +2,15 @@
 
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import ShaderDemo_ATC from "@/components/ui/atc-shader"
 
 export default function NotFound() {
     return (
         <div className="relative min-h-screen bg-black text-white font-sans flex items-center justify-center overflow-hidden">
 
-            {/* Background Shader */}
+            {/* Background */}
             <div className="fixed inset-0 z-0 pointer-events-none opacity-50">
-                <ShaderDemo_ATC />
-                <div className="absolute inset-0 bg-black/80 backdrop-blur-[2px]" />
+                <div className="absolute inset-0 bg-black" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.06)_0%,transparent_60%)]" />
             </div>
 
             <div className="relative z-10 text-center space-y-8 p-6 max-w-lg">

@@ -3,7 +3,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import uuid4
 
-from app.models.models import Preset, User
+from app.models.models import Preset
 
 @pytest.mark.asyncio
 async def test_get_presets_empty(client: AsyncClient):
@@ -57,8 +57,8 @@ async def test_get_preset_not_found(client: AsyncClient):
     assert response.status_code == 404
 
 @pytest.mark.asyncio
-async def test_apply_preset_authenticated(client: AsyncClient, auth_headers: dict):
-    """Test applying a preset to create a pipeline (authenticated)."""
+async def test_apply_preset(client: AsyncClient):
+    """Test applying a preset to create a pipeline."""
     # Initialize presets
     await client.post("/api/v1/presets/initialize")
     list_response = await client.get("/api/v1/presets")
@@ -67,7 +67,7 @@ async def test_apply_preset_authenticated(client: AsyncClient, auth_headers: dic
     # Apply preset
     response = await client.post(
         f"/api/v1/presets/{preset_id}/apply",
-        headers=auth_headers,
+        ,
         params={"pipeline_name": "Test Pipeline from Preset"}
     )
     assert response.status_code == 200

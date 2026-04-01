@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.models.models import Preset, Pipeline, PipelineStatus, User
+from app.models.models import Preset, Pipeline, PipelineStatus
 
 class PresetService:
     def __init__(self):
@@ -83,10 +83,9 @@ class PresetService:
         return await db.get(Preset, preset_id)
 
     async def apply_preset_to_pipeline(
-        self, 
-        db: AsyncSession, 
-        preset_id: UUID, 
-        user_id: UUID, 
+        self,
+        db: AsyncSession,
+        preset_id: UUID,
         pipeline_name: Optional[str] = None,
         custom_config: Optional[Dict[str, Any]] = None,
         document_id: Optional[UUID] = None
@@ -108,7 +107,6 @@ class PresetService:
         edges = self._generate_edges_from_nodes(nodes)
         
         pipeline = Pipeline(
-            user_id=user_id,
             name=pipeline_name or f"{preset.name} Pipeline",
             description=f"Created from preset: {preset.name}" + (" (Analyzed)" if custom_config else ""),
             status=PipelineStatus.DRAFT,

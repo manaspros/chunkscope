@@ -4,7 +4,6 @@ test.describe('ChunkScope Smoke Test', () => {
     test('should load the landing page', async ({ page }) => {
         await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-        // Wait for potential shader initialization delay
         await page.waitForLoadState('networkidle');
 
         // Check for landing page title or content using a more robust check
@@ -17,8 +16,6 @@ test.describe('ChunkScope Smoke Test', () => {
         // ChunkScope is in the header navigation
         await expect(page.getByText('ChunkScope')).toBeVisible();
 
-        // Verify shader background is present (as a decorative element or by its tag if known)
-        // Since we have Neon Crystal City, let's just check for general body presence
         await expect(page.locator('body')).toBeVisible();
     });
 

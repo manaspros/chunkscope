@@ -1,9 +1,7 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from fastapi import APIRouter, HTTPException
 
-from app.dependencies import DbSession, CurrentUser
+from app.dependencies import DbSession
 from app.schemas.query import QueryRequest, QueryResponse, ChunkWithScore
 from app.services.embeddings import OpenAIEmbedder
 from app.services.retrievers.hybrid_retriever import HybridRetriever
@@ -20,21 +18,19 @@ router = APIRouter(prefix="/query", tags=["Query"])
 async def query_pipeline(
     request: QueryRequest,
     db: DbSession,
-    current_user: CurrentUser
 ) -> QueryResponse:
     """
     Perform a retrieval query using the specified method.
     """
     try:
-        # 1. Get query embedding (needed for most retrievers except pure keyword)
-        # We use default OpenAI embedder for now
+        # 1. Get query embedding
         embedder = OpenAIEmbedder()
         embeddings = await embedder.embed([request.query])
         query_embedding = embeddings[0]
-        
+
         # 2. Select retriever
         retriever: BaseRetriever = None
-        
+
         if request.retrieval_method == "hybrid":
             retriever = HybridRetriever(db, alpha=request.alpha)
         elif request.retrieval_method == "mmr":
@@ -42,9 +38,8 @@ async def query_pipeline(
         elif request.retrieval_method == "parent_document":
             retriever = ParentDocumentRetriever(db)
         elif request.retrieval_method == "keyword":
-            # Hybrid with alpha=0 is pure keyword
             retriever = HybridRetriever(db, alpha=0.0)
-        else: # Default to vector/hybrid with alpha=1.0
+        else:
             retriever = HybridRetriever(db, alpha=1.0)
 
         # 2.5 Apply Query Augmentation Wrapper if requested
@@ -57,7 +52,7 @@ async def query_pipeline(
         elif request.augmentation_method == "expansion":
             from app.services.retrievers.query_expansion_retriever import QueryExpansionRetriever
             retriever = QueryExpansionRetriever(retriever)
-            
+
         # 3. Retrieve results
         results = await retriever.retrieve(
             query=request.query,
@@ -68,16 +63,16 @@ async def query_pipeline(
             lambda_mult=request.lambda_mult,
             alpha=request.alpha
         )
-        
+
         # 4. Format response
         formatted_results = [
             ChunkWithScore(
-                **row["chunk"].__dict__, # This might need better serialization if Chunk has non-serializable fields
+                **row["chunk"].__dict__,
                 score=row["score"],
                 metadata=row.get("metadata")
             ) for row in results
         ]
-        
+
         # Filter out SQLAlchemy specific internal state if present
         for res in formatted_results:
             if "_sa_instance_state" in res.__dict__:
@@ -89,7 +84,7 @@ async def query_pipeline(
             retrieval_method=request.retrieval_method,
             total_results=len(formatted_results)
         )
-        
+
     except Exception as e:
         logger.error(f"Query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))

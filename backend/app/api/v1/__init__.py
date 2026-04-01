@@ -2,7 +2,6 @@
 V1 Router Exports
 """
 from app.api.v1.analysis import router as analysis_router
-from app.api.v1.auth import router as auth_router
 from app.api.v1.chunks import router as chunks_router
 from app.api.v1.config import router as config_router
 from app.api.v1.documents import router as documents_router
@@ -17,7 +16,6 @@ from app.api.v1.query import router as query_router
 
 __all__ = [
     "analysis_router",
-    "auth_router",
     "chunks_router",
     "config_router",
     "documents_router",
@@ -27,8 +25,6 @@ __all__ = [
     "pipelines_router",
     "presets_router",
     "preview_router",
-    "websockets_router",
     "query_router",
     "rerank_router",
 ]
-

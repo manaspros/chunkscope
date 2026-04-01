@@ -1,23 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
-import { ArrowRight, Github, User, LogOut } from "lucide-react";
+import { Github } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/useAuthStore";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 export function Navbar() {
     const pathname = usePathname();
-    const { user, isAuthenticated, logout } = useAuthStore();
-    const router = useRouter();
-
-    const handleLogout = () => {
-        logout();
-        router.push('/');
-    };
 
     const isActive = (path: string) => pathname === path;
 
@@ -50,32 +41,13 @@ export function Navbar() {
                 </nav>
 
                 <div className="flex items-center gap-4">
-                    {isAuthenticated && user ? (
-                        <div className="flex items-center gap-3">
-                            <div className="hidden sm:flex flex-col items-end">
-                                <span className="text-xs font-medium text-white">{user.name}</span>
-                                <Button
-                                    variant="ghost"
-                                    onClick={handleLogout}
-                                    className="h-auto p-0 text-[10px] text-zinc-500 hover:text-red-400 flex items-center gap-1 transition-colors hover:bg-transparent"
-                                >
-                                    <LogOut className="h-2 w-2" />
-                                    Logout
-                                </Button>
-                            </div>
-                            <div className="h-8 w-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500">
-                                <User className="h-4 w-4" />
-                            </div>
-                        </div>
-                    ) : (
-                        <Link href="/login">
-                            <Button
-                                className="bg-white text-black hover:bg-zinc-200 h-9 px-4 rounded-full text-xs font-bold"
-                            >
-                                Sign In
-                            </Button>
-                        </Link>
-                    )}
+                    <Link href="/dashboard">
+                        <Button
+                            className="bg-white text-black hover:bg-zinc-200 h-9 px-4 rounded-full text-xs font-bold"
+                        >
+                            Dashboard
+                        </Button>
+                    </Link>
 
                     <Link href="https://github.com/1Ash0/chunkscope" className="text-zinc-400 hover:text-white transition-colors">
                         <Github className="h-5 w-5" />

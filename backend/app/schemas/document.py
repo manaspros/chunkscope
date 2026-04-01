@@ -28,7 +28,6 @@ class DocumentCreate(BaseModel):
 
 class DocumentResponse(BaseSchema, IDMixin, TimestampMixin):
     """Document response."""
-    user_id: UUID
     filename: str
     original_filename: str
     file_path: str

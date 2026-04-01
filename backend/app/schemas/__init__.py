@@ -1,14 +1,6 @@
 """
 Schemas package exports
 """
-from app.schemas.auth import (
-    AuthResponse,
-    LoginRequest,
-    RefreshTokenRequest,
-    RegisterRequest,
-    TokenResponse,
-    UserResponse,
-)
 from app.schemas.chunk import (
     BoundingBox,
     ChunkingConfig,
@@ -73,13 +65,6 @@ __all__ = [
     "SuccessResponse",
     "ErrorResponse",
     "HealthResponse",
-    # Auth
-    "RegisterRequest",
-    "LoginRequest",
-    "RefreshTokenRequest",
-    "TokenResponse",
-    "UserResponse",
-    "AuthResponse",
     # Pipeline
     "PipelineNode",
     "PipelineEdge",
@@ -117,4 +102,3 @@ __all__ = [
     "PipelineValidateResponse",
     "ValidationIssue",
 ]
-

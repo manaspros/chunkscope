@@ -14,12 +14,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.core.security import hash_password
 from app.core.errors import AppException
 from app.services.document_analyzer import document_analyzer
 from app.services.document_service import document_service
-from app.models import User, Document
-from app import dependencies as deps
+from app.models import Document
+from app.core.database import get_db
 
 logger = get_logger(__name__)
 
@@ -41,82 +40,50 @@ class AnalysisResponse(BaseModel):
 async def analyze_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    current_user: Optional[User] = Depends(deps.get_current_user_optional),
-    db: AsyncSession = Depends(deps.get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
-    Analyze a uploaded document.
-    
-    If user is authenticated, saves the document.
-    If anonymous, uses/creates a default 'demo' user to save the document so visualizer works.
-    """
-    
-    # Handling Anonymous Users: Ensure we always have a user to save the document
-    if not current_user:
-        try:
-            # Try to find the specific Demo User
-            result = await db.execute(select(User).where(User.email == "demo@chunkscope.com"))
-            current_user = result.scalars().first()
-            
-            if not current_user:
-                logger.info("No users found. Creating 'Demo User' for anonymous analysis.")
-                current_user = User(
-                    email="demo@chunkscope.com",
-                    password_hash=hash_password("demo123"), # Correct field name
-                    name="Demo User" # Correct field name
-                )
-                db.add(current_user)
-                await db.commit()
-                await db.refresh(current_user)
-            else:
-                logger.info(f"Using default user '{current_user.email}' for anonymous analysis.")
-        except Exception as e:
-            logger.error(f"Failed to setup anonymous user: {e}", exc_info=True)
-            # Continue without user if DB fails, but saving will likely fail
-            pass
+    Analyze an uploaded document.
 
+    Saves the document and returns analysis with recommended chunking config.
+    """
     document_id = None
     temp_path = None
-    
+
     try:
         # Validate and save file using document service
-        # Note: document_service usually requires a user_id, but we'll manually create the Document object here
-        # to ensure we use our retrieved/created current_user
-        
         file_type = await document_service.validate_upload(file)
         stored_filename, file_path, file_size = await document_service.save_file(file, file_type)
-        temp_path = file_path # Keep track for cleanup if needed
-        
-        if current_user:
-            # Create Document record linked to the user
-            document = Document(
-                user_id=current_user.id,
-                filename=stored_filename,
-                original_filename=file.filename or "unknown",
-                file_path=file_path,
-                file_type=file_type.value,
-                file_size_bytes=file_size,
-                doc_metadata={},
-                is_processed=False,
-            )
-            db.add(document)
-            await db.commit()
-            await db.refresh(document)
-            
-            document_id = document.id
-            
-            # Start extraction in background
-            background_tasks.add_task(document_service.process_document, document_id)
-        
+        temp_path = file_path
+
+        # Create Document record
+        document = Document(
+            filename=stored_filename,
+            original_filename=file.filename or "unknown",
+            file_path=file_path,
+            file_type=file_type.value,
+            file_size_bytes=file_size,
+            doc_metadata={},
+            is_processed=False,
+        )
+        db.add(document)
+        await db.commit()
+        await db.refresh(document)
+
+        document_id = document.id
+
+        # Start extraction in background
+        background_tasks.add_task(document_service.process_document, document_id)
+
         # Analyze the document
         logger.info(f"Analyzing file: {file.filename}, document_id={document_id}")
-        
+
         # Run analysis
         result = await document_analyzer.analyze(file_path)
-        
+
         # Debug logging
         logger.info("analysis_complete", filename=file.filename, document_id=document_id)
-        
+
         return AnalysisResponse(
             document_id=document_id,
             **result
@@ -125,9 +92,9 @@ async def analyze_document(
     except Exception as e:
         if isinstance(e, AppException):
             raise e
-            
+
         logger.exception("analysis_failed", error=str(e), document_id=document_id)
-            
+
         logger.error(f"Document analysis failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -60,7 +60,6 @@ class PipelineUpdate(BaseModel):
 
 class PipelineResponse(BaseSchema, IDMixin, TimestampMixin):
     """Pipeline response."""
-    user_id: UUID
     name: str
     description: Optional[str]
     status: str

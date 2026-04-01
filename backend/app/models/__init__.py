@@ -3,7 +3,6 @@ ChunkScope Models Package
 """
 from .base import Base, TimestampMixin
 from .models import (
-    User,
     Pipeline,
     PipelineVersion,
     Document,
@@ -25,7 +24,6 @@ __all__ = [
     "Base",
     "TimestampMixin",
     # Models
-    "User",
     "Pipeline",
     "PipelineVersion",
     "Document",

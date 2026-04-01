@@ -32,7 +32,6 @@ class EvaluationCreate(BaseModel):
 
 class EvaluationResponse(BaseSchema, IDMixin):
     """Evaluation response."""
-    user_id: UUID
     name: Optional[str]
     pipeline_id: UUID
     test_dataset_id: Optional[UUID]

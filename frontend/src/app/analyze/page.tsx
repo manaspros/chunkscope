@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/components/ui/use-toast';
-import { AuthGuard } from '@/components/auth/AuthGuard';
 import { getErrorMessage } from '@/lib/utils';
 import { AnalysisResultOverlay } from '@/components/analysis/AnalysisResultOverlay';
 import { useConfigStore } from '@/stores/useConfigStore';
@@ -84,8 +83,7 @@ export default function AnalyzePage() {
     };
 
     return (
-        <AuthGuard>
-            <div className="relative min-h-screen bg-transparent font-sans text-white">
+        <div className="relative min-h-screen bg-transparent font-sans text-white">
 
                 <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
                     <div className="w-full max-w-3xl space-y-12">
@@ -171,6 +169,5 @@ export default function AnalyzePage() {
                     </div>
                 </div>
             </div>
-        </AuthGuard>
     );
 }

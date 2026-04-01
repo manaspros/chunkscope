@@ -6,7 +6,6 @@ import { presetsApi, analyzerApi } from '@/lib/api';
 import { Loader2, Check, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/components/ui/use-toast"
-import { useAuthStore } from "@/stores/useAuthStore";
 import { DocumentSelectionModal } from './DocumentSelectionModal';
 
 interface Preset {
@@ -27,15 +26,12 @@ export function PresetGallery() {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [applyingId, setApplyingId] = useState<string | null>(null);
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-
     // New state for document selection
     const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null);
     const [isDocModalOpen, setIsDocModalOpen] = useState(false);
 
     const router = useRouter();
     const { toast } = useToast()
-    const { isAuthenticated } = useAuthStore()
 
     useEffect(() => {
         loadPresets();
@@ -59,16 +55,6 @@ export function PresetGallery() {
     };
 
     const handlePresetClick = (preset: Preset) => {
-        // Check for auth first
-        if (!isAuthenticated) {
-            toast({
-                title: "Authentication Required",
-                description: "Please sign in to use presets.",
-            })
-            router.push('/login');
-            return;
-        }
-
         // Open document selection modal
         setSelectedPreset(preset);
         setIsDocModalOpen(true);

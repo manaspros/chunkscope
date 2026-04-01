@@ -3,11 +3,9 @@
 import React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/stores/useAuthStore"
 import { useConfigStore } from "@/stores/useConfigStore"
 import { analyzerApi } from "@/lib/api"
 import { motion } from "framer-motion"
-import ShaderDemo_ATC from "@/components/ui/atc-shader"
 import { ArrowRight, Database, Github, Search, Eye, GitBranch, Layers, Zap, Cpu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DocumentSelectionModal } from "@/components/presets/DocumentSelectionModal"
@@ -16,7 +14,6 @@ import { AnimatePresence } from "framer-motion"
 import { AnalysisResultOverlay } from "@/components/analysis/AnalysisResultOverlay"
 
 export default function Home() {
-    const { isAuthenticated } = useAuthStore()
     const router = useRouter()
     const { toast } = useToast()
     const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -27,10 +24,6 @@ export default function Home() {
     const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 })
 
     const handleFileSelect = () => {
-        if (!isAuthenticated) {
-            router.push("/login")
-            return
-        }
         fileInputRef.current?.click()
     }
 
@@ -45,8 +38,6 @@ export default function Home() {
             const result = await analyzerApi.analyzeDocument(file)
             setAnalysisResult(result)
             setSelectedDocId(result.document_id)
-            // Removed automatic redirect to visualizer
-            // router.push(`/visualizer?docId=${result.document_id}`)
         } catch (error) {
             console.error("Analysis failed:", error)
             toast({
@@ -62,10 +53,8 @@ export default function Home() {
     const handleConfirmAnalysis = (config: any) => {
         if (!analysisResult) return
 
-        // Map backend 'character' to frontend 'recursive'
         const method = config.chunking_method === 'character' ? 'recursive' : config.chunking_method as any
 
-        // Update store with recommended config
         useConfigStore.getState().setMethod(method)
         useConfigStore.getState().setChunkSize(config.chunk_size)
         useConfigStore.getState().setOverlap(config.overlap)
@@ -119,16 +108,16 @@ export default function Home() {
                             <Github className="w-4 h-4" />
                         </Link>
                         <Link
-                            href={isAuthenticated ? "/dashboard" : "/login"}
+                            href="/dashboard"
                             className="px-4 py-1.5 bg-transparent border border-white/20 text-white text-[9px] uppercase font-black rounded-full hover:bg-white/10 hover:scale-105 transition-all shadow-[0_0_10px_rgba(255,255,255,0.1)] tracking-widest"
                         >
-                            {isAuthenticated ? "Dashboard" : "Get Started"}
+                            Dashboard
                         </Link>
                     </div>
                 </div>
             </nav>
 
-            {/* Content Container - z-10 floats above shader */}
+            {/* Content Container */}
             <div className="relative z-20 flex flex-col items-center">
 
                 {/* Hero Section */}
@@ -149,7 +138,7 @@ export default function Home() {
                             Public Beta v0.1.0
                         </div>
 
-                        {/* Title - Balanced Typography & Blending */}
+                        {/* Title */}
                         <div className="relative group">
                             <div className="absolute -inset-8 rounded-full bg-orange-500/5 opacity-0 group-hover:opacity-100 blur-3xl transition-opacity pointer-events-none" />
                             <h1 className="relative text-5xl md:text-[6.5rem] font-heading font-black tracking-[-0.04em] text-white leading-[0.85] mix-blend-plus-lighter drop-shadow-[0_0_40px_rgba(255,255,255,0.1)]">
@@ -163,16 +152,14 @@ export default function Home() {
                             Deep dive into your <span className="text-white italic underline decoration-orange-500/30 underline-offset-4">vector space</span>. Visualize semantic chunks, debug retrieval quality, and optimize your knowledge graph with forensic precision.
                         </p>
 
-                        {/* Quick Analyze Component - High Interactivity */}
+                        {/* Quick Analyze Component */}
                         <div className="max-w-xl mx-auto p-[1px] bg-white/10 rounded-[2.5rem] group transition-all relative overflow-hidden backdrop-blur-md">
-                            {/* Scanning HUD Ring Overlay */}
                             <motion.div
                                 animate={{ rotate: 360 }}
                                 transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                                 className="absolute -top-32 -left-32 w-64 h-64 border border-orange-500/5 rounded-full pointer-events-none"
                             />
 
-                            {/* Scanning Laser Line Effect */}
                             <motion.div
                                 animate={{
                                     top: ["-10%", "110%"],
@@ -186,7 +173,6 @@ export default function Home() {
                             />
 
                             <div className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.4rem] overflow-hidden relative z-30 border border-white/5 m-[1px]">
-                                {/* Hidden File Input moved here for better accessibility */}
                                 <input
                                     type="file"
                                     ref={fileInputRef}
@@ -229,7 +215,6 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            {/* Corner Decorative Brackets - Finer */}
                             <div className="absolute top-6 left-6 w-3 h-3 border-t-2 border-l-2 border-orange-500/20 group-hover:border-orange-500/40 transition-colors pointer-events-none" />
                             <div className="absolute bottom-6 right-6 w-3 h-3 border-b-2 border-r-2 border-white/5 group-hover:border-white/20 transition-colors pointer-events-none" />
                         </div>
@@ -237,14 +222,14 @@ export default function Home() {
                         {/* CTAs */}
                         <div className="flex flex-col sm:flex-row gap-5 justify-center pt-8">
                             <Link
-                                href={isAuthenticated ? "/visualizer" : "/login"}
+                                href="/visualizer"
                                 className="group relative px-10 py-3.5 bg-white/5 backdrop-blur-md border border-white/10 text-white rounded-full font-black text-[9px] uppercase tracking-[0.25em] hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-3 hover:border-orange-500/40 shadow-lg"
                             >
                                 <Eye className="w-3.5 h-3.5 text-orange-400" />
                                 Launch Visualizer
                             </Link>
                             <Link
-                                href={isAuthenticated ? "/pipeline" : "/login"}
+                                href="/pipeline"
                                 className="group relative px-10 py-3.5 bg-white/5 backdrop-blur-md border border-white/10 text-white rounded-full font-black text-[9px] uppercase tracking-[0.25em] hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-3 hover:border-purple-500/40 shadow-lg"
                             >
                                 <Cpu className="w-3.5 h-3.5 text-purple-400" />
@@ -253,7 +238,7 @@ export default function Home() {
                         </div>
                     </motion.div>
 
-                    {/* Scroll Indicator - Bottom Fixed and further away */}
+                    {/* Scroll Indicator */}
                     <div className="absolute bottom-12 flex flex-col items-center gap-3 pointer-events-none w-full">
                         <span className="text-[7px] font-black uppercase tracking-[0.5em] text-zinc-700 animate-pulse">Scan Below</span>
                         <motion.div
@@ -277,7 +262,7 @@ export default function Home() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         {/* Analyzer Card */}
-                        <Link href={isAuthenticated ? "/analyze" : "/login"}>
+                        <Link href="/analyze">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
@@ -320,13 +305,7 @@ export default function Home() {
 
                                 <div className="flex items-center gap-4 relative z-10">
                                     <button
-                                        onClick={() => {
-                                            if (!isAuthenticated) {
-                                                router.push("/login")
-                                            } else {
-                                                router.push("/visualizer")
-                                            }
-                                        }}
+                                        onClick={() => router.push("/visualizer")}
                                         className="flex items-center text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] group-hover:translate-x-1 transition-all"
                                     >
                                         Launch <ArrowRight className="w-4 h-4 ml-2" />
@@ -334,11 +313,7 @@ export default function Home() {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation()
-                                            if (!isAuthenticated) {
-                                                router.push("/login")
-                                            } else {
-                                                setIsUploadModalOpen(true)
-                                            }
+                                            setIsUploadModalOpen(true)
                                         }}
                                         className="px-4 py-2 rounded-xl bg-zinc-900 border border-white/5 text-[9px] font-black text-zinc-500 hover:text-white hover:bg-zinc-800 hover:border-white/10 transition-all uppercase tracking-widest"
                                     >
@@ -349,7 +324,7 @@ export default function Home() {
                         </div>
 
                         {/* Builder Card */}
-                        <Link href={isAuthenticated ? "/pipeline" : "/login"}>
+                        <Link href="/pipeline">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
@@ -373,7 +348,7 @@ export default function Home() {
                     </div>
                 </section>
 
-                {/* Technical Specs / Minimal Stats */}
+                {/* Technical Specs */}
                 <section className="w-full max-w-4xl mx-auto px-6 py-10 border-t border-white/5">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center divide-x divide-white/5">
                         <div className="p-2">
@@ -401,13 +376,13 @@ export default function Home() {
                         Build Smarter RAG.
                     </h2>
                     <Link
-                        href={isAuthenticated ? "/dashboard" : "/login"}
+                        href="/dashboard"
                         className="px-8 py-2.5 bg-[#F5B700] text-black text-xs font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-[0_0_30px_rgba(245,183,0,0.2)]"
                     >
                         Enter Terminal
                     </Link>
                     <p className="text-zinc-600 text-[9px] tracking-widest uppercase mt-4">
-                        © 2025 ChunkScope
+                        &copy; 2025 ChunkScope
                     </p>
                 </section>
 

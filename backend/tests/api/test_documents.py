@@ -7,14 +7,13 @@ import pytest_asyncio
 from httpx import AsyncClient
 from uuid import uuid4
 
-from app.models import User, Document, DocumentType
+from app.models import Document, DocumentType
 
 
 @pytest_asyncio.fixture
-async def test_document(test_db, test_user: User) -> Document:
+async def test_document(test_db) -> Document:
     """Create a test document."""
     doc = Document(
-        user_id=test_user.id,
         filename="test123.pdf",
         original_filename="test.pdf",
         file_path="./uploads/test123.pdf",
@@ -34,21 +33,14 @@ async def test_document(test_db, test_user: User) -> Document:
 # ============================================
 
 @pytest.mark.asyncio
-async def test_upload_requires_auth(client: AsyncClient):
-    """Test that upload requires authentication."""
-    response = await client.post("/api/v1/documents/upload")
-    assert response.status_code == 401
-
-
-@pytest.mark.asyncio
-async def test_upload_pdf_success(client: AsyncClient, auth_headers: dict, tmp_path):
+async def test_upload_pdf_success(client: AsyncClient, tmp_path):
     """Test successful PDF upload."""
     # Create a minimal PDF
     pdf_content = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF"
     
     response = await client.post(
         "/api/v1/documents/upload",
-        headers=auth_headers,
+        ,
         files={"file": ("test.pdf", io.BytesIO(pdf_content), "application/pdf")},
     )
     
@@ -60,11 +52,11 @@ async def test_upload_pdf_success(client: AsyncClient, auth_headers: dict, tmp_p
 
 
 @pytest.mark.asyncio
-async def test_upload_invalid_file_type(client: AsyncClient, auth_headers: dict):
+async def test_upload_invalid_file_type(client: AsyncClient):
     """Test rejection of invalid file types."""
     response = await client.post(
         "/api/v1/documents/upload",
-        headers=auth_headers,
+        ,
         files={"file": ("test.exe", io.BytesIO(b"fake content"), "application/octet-stream")},
     )
     
@@ -73,11 +65,11 @@ async def test_upload_invalid_file_type(client: AsyncClient, auth_headers: dict)
 
 
 @pytest.mark.asyncio
-async def test_upload_corrupted_pdf(client: AsyncClient, auth_headers: dict):
+async def test_upload_corrupted_pdf(client: AsyncClient):
     """Test rejection of corrupted PDF (wrong magic bytes)."""
     response = await client.post(
         "/api/v1/documents/upload",
-        headers=auth_headers,
+        ,
         files={"file": ("test.pdf", io.BytesIO(b"not a pdf"), "application/pdf")},
     )
     
@@ -90,9 +82,9 @@ async def test_upload_corrupted_pdf(client: AsyncClient, auth_headers: dict):
 # ============================================
 
 @pytest.mark.asyncio
-async def test_list_documents(client: AsyncClient, auth_headers: dict, test_document: Document):
+async def test_list_documents(client: AsyncClient, test_document: Document):
     """Test listing documents."""
-    response = await client.get("/api/v1/documents", headers=auth_headers)
+    response = await client.get("/api/v1/documents")
     
     assert response.status_code == 200
     data = response.json()
@@ -101,11 +93,11 @@ async def test_list_documents(client: AsyncClient, auth_headers: dict, test_docu
 
 
 @pytest.mark.asyncio
-async def test_get_document(client: AsyncClient, auth_headers: dict, test_document: Document):
+async def test_get_document(client: AsyncClient, test_document: Document):
     """Test getting a specific document."""
     response = await client.get(
         f"/api/v1/documents/{test_document.id}",
-        headers=auth_headers,
+        ,
     )
     
     assert response.status_code == 200
@@ -116,23 +108,23 @@ async def test_get_document(client: AsyncClient, auth_headers: dict, test_docume
 
 
 @pytest.mark.asyncio
-async def test_get_document_not_found(client: AsyncClient, auth_headers: dict):
+async def test_get_document_not_found(client: AsyncClient):
     """Test 404 for non-existent document."""
     fake_id = uuid4()
     response = await client.get(
         f"/api/v1/documents/{fake_id}",
-        headers=auth_headers,
+        ,
     )
     
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_delete_document(client: AsyncClient, auth_headers: dict, test_document: Document):
+async def test_delete_document(client: AsyncClient, test_document: Document):
     """Test deleting a document."""
     response = await client.delete(
         f"/api/v1/documents/{test_document.id}",
-        headers=auth_headers,
+        ,
     )
     
     assert response.status_code == 200

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter, Rajdhani, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { AuthProvider } from "@/components/auth/AuthProvider"
 import { Toaster } from "@/components/ui/toaster"
 
 import { GlobalErrorBoundary } from "@/components/debug/GlobalErrorBoundary"
@@ -28,9 +27,7 @@ export default function RootLayout({
             <body className={cn(inter.variable, rajdhani.variable, jetbrainsMono.variable, "bg-background text-foreground min-h-screen antialiased selection:bg-amber-500/30 font-sans")}>
                 <GlobalBackground />
                 <GlobalErrorBoundary>
-                    <AuthProvider>
-                        {children}
-                    </AuthProvider>
+                    {children}
                 </GlobalErrorBoundary>
                 <Toaster />
             </body>

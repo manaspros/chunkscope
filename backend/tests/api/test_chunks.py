@@ -7,11 +7,11 @@ from httpx import AsyncClient
 from uuid import uuid4
 import os
 import shutil
-from app.models import User, Document, Chunk, DocumentType
+from app.models import Document, Chunk, DocumentType
 
 
 @pytest_asyncio.fixture
-async def test_document_with_text(test_db, test_user: User) -> Document:
+async def test_document_with_text(test_db) -> Document:
     """Create a test document with extracted text."""
     # Ensure uploads directory exists
     os.makedirs("./uploads", exist_ok=True)
@@ -29,7 +29,6 @@ async def test_document_with_text(test_db, test_user: User) -> Document:
             f.write(b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n/Resources <<\n/Font <<\n/F1 4 0 R\n>>\n>>\n/Contents 5 0 R\n>>\nendobj\n4 0 obj\n<<\n/Type /Font\n/Subtype /Type1\n/BaseFont /Helvetica\n>>\nendobj\n5 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 24 Tf\n100 100 Td\n(Hello World) Tj\nET\nendstream\nendobj\nxref\n0 6\n0000000000 65535 f\n0000000010 00000 n\n0000000060 00000 n\n0000000117 00000 n\n0000000216 00000 n\n0000000293 00000 n\ntrailer\n<<\n/Size 6\n/Root 1 0 R\n>>\nstartxref\n388\n%%EOF")
 
     doc = Document(
-        user_id=test_user.id,
         filename="test123.pdf",
         original_filename="test.pdf",
         file_path=dest_pdf,
@@ -53,10 +52,9 @@ async def test_document_with_text(test_db, test_user: User) -> Document:
 
 
 @pytest_asyncio.fixture
-async def test_document_no_text(test_db, test_user: User) -> Document:
+async def test_document_no_text(test_db) -> Document:
     """Create a test document without extracted text."""
     doc = Document(
-        user_id=test_user.id,
         filename="unprocessed.pdf",
         original_filename="unprocessed.pdf",
         file_path="./uploads/unprocessed.pdf",
@@ -78,13 +76,13 @@ async def test_document_no_text(test_db, test_user: User) -> Document:
 @pytest.mark.asyncio
 async def test_visualize_fixed_chunking(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
     test_document_with_text: Document,
 ):
     """Test fixed-size chunking visualization."""
     response = await client.post(
         "/api/v1/chunks/visualize",
-        headers=auth_headers,
+        ,
         json={
             "document_id": str(test_document_with_text.id),
             "chunking_config": {
@@ -106,13 +104,13 @@ async def test_visualize_fixed_chunking(
 @pytest.mark.asyncio
 async def test_visualize_sentence_chunking(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
     test_document_with_text: Document,
 ):
     """Test sentence-based chunking visualization."""
     response = await client.post(
         "/api/v1/chunks/visualize",
-        headers=auth_headers,
+        ,
         json={
             "document_id": str(test_document_with_text.id),
             "chunking_config": {
@@ -131,13 +129,13 @@ async def test_visualize_sentence_chunking(
 @pytest.mark.asyncio
 async def test_visualize_paragraph_chunking(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
     test_document_with_text: Document,
 ):
     """Test paragraph-based chunking visualization."""
     response = await client.post(
         "/api/v1/chunks/visualize",
-        headers=auth_headers,
+        ,
         json={
             "document_id": str(test_document_with_text.id),
             "chunking_config": {
@@ -156,13 +154,13 @@ async def test_visualize_paragraph_chunking(
 @pytest.mark.asyncio
 async def test_visualize_recursive_chunking(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
     test_document_with_text: Document,
 ):
     """Test recursive chunking visualization."""
     response = await client.post(
         "/api/v1/chunks/visualize",
-        headers=auth_headers,
+        ,
         json={
             "document_id": str(test_document_with_text.id),
             "chunking_config": {
@@ -181,13 +179,13 @@ async def test_visualize_recursive_chunking(
 @pytest.mark.asyncio
 async def test_visualize_document_not_processed(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
     test_document_no_text: Document,
 ):
     """Test error when document has no extracted text."""
     response = await client.post(
         "/api/v1/chunks/visualize",
-        headers=auth_headers,
+        ,
         json={
             "document_id": str(test_document_no_text.id),
             "chunking_config": {"method": "fixed"},
@@ -201,13 +199,13 @@ async def test_visualize_document_not_processed(
 @pytest.mark.asyncio
 async def test_visualize_invalid_overlap(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
     test_document_with_text: Document,
 ):
     """Test error when overlap >= chunk_size."""
     response = await client.post(
         "/api/v1/chunks/visualize",
-        headers=auth_headers,
+        ,
         json={
             "document_id": str(test_document_with_text.id),
             "chunking_config": {
@@ -225,13 +223,13 @@ async def test_visualize_invalid_overlap(
 @pytest.mark.asyncio
 async def test_visualize_document_not_found(
     client: AsyncClient,
-    auth_headers: dict,
+    ,
 ):
     """Test 404 for non-existent document."""
     fake_id = uuid4()
     response = await client.post(
         "/api/v1/chunks/visualize",
-        headers=auth_headers,
+        ,
         json={
             "document_id": str(fake_id),
             "chunking_config": {"method": "fixed"},

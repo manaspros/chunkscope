@@ -1,8 +1,6 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { addEffect, addAfterEffect } from '@react-three/fiber'
-import * as THREE from 'three'
 
 export function usePerformanceMonitor() {
     const [fps, setFps] = useState(60)
@@ -11,9 +9,9 @@ export function usePerformanceMonitor() {
     useEffect(() => {
         let lastTime = performance.now()
         let frames = 0
+        let animId: number
 
-        // R3F effect loop for accurate FPS relative to render loop
-        const unsubscribe = addAfterEffect(() => {
+        const measure = () => {
             const time = performance.now()
             frames++
             if (time >= lastTime + 1000) {
@@ -21,9 +19,11 @@ export function usePerformanceMonitor() {
                 frames = 0
                 lastTime = time
             }
-        })
+            animId = requestAnimationFrame(measure)
+        }
 
-        return unsubscribe
+        animId = requestAnimationFrame(measure)
+        return () => cancelAnimationFrame(animId)
     }, [])
 
     return { fps, memory }

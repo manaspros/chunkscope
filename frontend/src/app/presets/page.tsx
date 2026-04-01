@@ -5,7 +5,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, BookOpen, FileText, Scale, Stethoscope, Code, ExternalLink } from "lucide-react"
-import { AuthGuard } from "@/components/auth/AuthGuard"
 import { DocumentSelectionModal } from "@/components/presets/DocumentSelectionModal"
 import { presetsApi } from "@/lib/api"
 import { useToast } from "@/components/ui/use-toast"
@@ -109,8 +108,7 @@ export default function PresetsPage() {
     }
 
     return (
-        <AuthGuard>
-            <div className="relative min-h-screen bg-transparent font-sans text-white overflow-x-hidden">
+        <div className="relative min-h-screen bg-transparent font-sans text-white overflow-x-hidden">
                 <div className="relative z-10 p-8 max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-12">
@@ -181,6 +179,5 @@ export default function PresetsPage() {
                     )}
                 </AnimatePresence>
             </div>
-        </AuthGuard>
     )
 }

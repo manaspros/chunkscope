@@ -10,15 +10,12 @@ import { useToast } from '@/components/ui/use-toast'
 import { pipelinesApi, documentsApi, chunksApi } from '@/lib/api'
 import { useConfigStore, ChunkingMethod } from '@/stores/useConfigStore'
 import { useChunkStore } from '@/stores/useChunkStore'
-import { useAuthStore } from '@/stores/useAuthStore'
 import { ChunkConfigPanel } from '@/components/visualizer/chunk-config-panel'
 import { ChunkVisualizer } from '@/components/visualizer/chunk-visualizer'
 import { ChunkDetailPanel } from '@/components/visualizer/chunk-detail-panel'
 import { DEMO_PDF_URL, MOCK_CHUNKS } from '@/lib/mock-data'
 
-import { AuthGuard } from '@/components/auth/AuthGuard'
 import { getErrorMessage } from '@/lib/utils'
-import ShaderDemo_ATC from "@/components/ui/atc-shader"
 
 import { Suspense } from 'react'
 
@@ -51,10 +48,8 @@ function VisualizerContent() {
     useEffect(() => {
         const autoProcess = searchParams.get('auto') === 'true'
         if (autoProcess && selectedDocId && !isLoading) {
-            // Wait a tiny bit for UI to settle or just trigger
             setTimeout(() => {
                 handleProcess()
-                // Clean up URL to avoid re-triggering on refresh
                 const newParams = new URLSearchParams(searchParams.toString())
                 newParams.delete('auto')
                 router.replace(`/visualizer?${newParams.toString()}`)
@@ -68,9 +63,6 @@ function VisualizerContent() {
             setDocDetails(doc)
             const contentUrl = documentsApi.getDocumentContentUrl(id)
             setPdfUrl(contentUrl)
-
-            // If the document has chunks already, we could fetch them here or let the user click "Execute"
-            // For now, let's just clear old chunks to avoid confusion
             setChunks([])
         } catch (error) {
             console.error("Failed to load document:", error)
@@ -116,10 +108,11 @@ function VisualizerContent() {
     }
 
     return (
-        <AuthGuard>
+        <div className="relative">
+            {/* Background */}
             <div className="fixed inset-0 z-0">
-                <ShaderDemo_ATC />
-                <div className="absolute inset-0 bg-black/80 backdrop-blur-[2px]" />
+                <div className="absolute inset-0 bg-black" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(245,158,11,0.04)_0%,transparent_50%)]" />
             </div>
 
             <div className="relative z-10 flex h-screen bg-transparent overflow-hidden">
@@ -152,9 +145,9 @@ function VisualizerContent() {
                     </div>
                 </div>
 
-                {/* Main Content: 3D Visualizer */}
+                {/* Main Content: Visualizer */}
                 <div className="flex-1 relative bg-transparent">
-                    {/* Overlay Stats (Dynamic) */}
+                    {/* Overlay Stats */}
                     <div className="absolute top-4 left-4 z-10 pointer-events-none flex flex-col gap-2">
                         <div className="flex gap-2">
                             <div className="px-3 py-1.5 bg-black/60 backdrop-blur-md rounded border border-white/5 text-[10px] font-mono text-zinc-500 uppercase tracking-widest flex items-center gap-2">
@@ -184,12 +177,12 @@ function VisualizerContent() {
                     />
                 </div>
 
-                {/* Right Panel: Details (Tightened) */}
+                {/* Right Panel: Details */}
                 <div className="w-[260px] border-l border-white/5 bg-black/40 backdrop-blur-xl flex flex-col z-20">
                     <ChunkDetailPanel chunk={selectedChunk} onClose={() => setSelectedChunk(null)} />
                 </div>
             </div>
-        </AuthGuard >
+        </div>
     )
 }
 

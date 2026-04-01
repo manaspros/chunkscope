@@ -6,12 +6,13 @@ from uuid import UUID
 import pathlib
 
 from fastapi import APIRouter, Query, UploadFile, File, HTTPException, status, BackgroundTasks
+from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 
-from app.core.errors import BadRequestError, NotFoundError, PermissionDeniedError
+from app.core.errors import BadRequestError, NotFoundError
 from app.core.logging import get_logger
-from app.dependencies import CurrentUser, CurrentUserOptional, DbSession
-from app.models import Document, User, Chunk
+from app.dependencies import DbSession
+from app.models import Document, Chunk
 from app.schemas import (
     DocumentListResponse,
     DocumentResponse,
@@ -31,12 +32,11 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 async def upload_document(
     background_tasks: BackgroundTasks,
     db: DbSession,
-    current_user: CurrentUser,
     file: UploadFile = File(..., description="PDF, TXT, or MD file to upload"),
 ) -> DocumentResponse:
     """
     Upload a document for processing.
-    
+
     Accepts PDF, TXT, and MD files up to 100MB.
     """
     # Validate file
@@ -50,7 +50,7 @@ async def upload_document(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"File validation failed: {str(e)}"
         )
-    
+
     # Save file to disk
     try:
         stored_filename, file_path, file_size = await document_service.save_file(file, file_type)
@@ -60,10 +60,9 @@ async def upload_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save file"
         )
-    
+
     # Create database record
     document = Document(
-        user_id=current_user.id,
         filename=stored_filename,
         original_filename=file.filename or "unknown",
         file_path=file_path,
@@ -75,74 +74,72 @@ async def upload_document(
     db.add(document)
     await db.flush()
     await db.refresh(document)
-    
+
     logger.info(
         "document_uploaded",
         document_id=str(document.id),
         filename=file.filename,
         size_bytes=file_size,
     )
-    
+
     # Trigger processing in background
     background_tasks.add_task(document_service.process_document, document.id)
-    
+
     return DocumentResponse.model_validate(document)
 
 
 @router.get("", response_model=DocumentListResponse)
 async def list_documents(
     db: DbSession,
-    current_user: CurrentUser,
     page: int = Query(default=1, ge=1),
     per_page: int = Query(default=20, ge=1, le=100),
     file_type: str | None = Query(default=None, description="Filter by file type"),
 ) -> DocumentListResponse:
-    """List all documents for the current user."""
+    """List all documents."""
     params = PaginationParams(page=page, per_page=per_page)
-    
+
     # Base query
-    base_query = select(Document).where(Document.user_id == current_user.id)
-    
+    base_query = select(Document)
+
     if file_type:
         base_query = base_query.where(Document.file_type == file_type)
-    
+
     # Count total
     count_query = select(func.count()).select_from(base_query.subquery())
     total = (await db.execute(count_query)).scalar() or 0
-    
+
     # Fetch items with chunk counts
     chunk_count_subquery = (
         select(Chunk.document_id, func.count(Chunk.id).label("count"))
         .group_by(Chunk.document_id)
         .subquery()
     )
-    
+
     query = (
         select(Document, func.coalesce(chunk_count_subquery.c.count, 0).label("chunk_count"))
         .outerjoin(chunk_count_subquery, Document.id == chunk_count_subquery.c.document_id)
-        .where(Document.user_id == current_user.id)
     )
-    
+
     if file_type:
         query = query.where(Document.file_type == file_type)
-        
+
     query = (
         query
         .order_by(Document.created_at.desc())
         .offset(params.offset)
         .limit(params.per_page)
     )
-    
+
     result = await db.execute(query)
     rows = result.all()
-    
+
     # Map to response schema
     items = []
     for doc, chunk_count in rows:
         d_resp = DocumentResponse.model_validate(doc)
         d_resp.chunk_count = chunk_count
         items.append(d_resp)
-    
+
     return paginate(
         items=items,
         total=total,
@@ -150,43 +147,23 @@ async def list_documents(
     )
 
 
-from fastapi.responses import FileResponse
-
 @router.get("/{document_id}/content")
 async def get_document_content(
     document_id: UUID,
     db: DbSession,
-    current_user: CurrentUserOptional,
 ):
     """Get the actual file content of a document."""
     try:
-        # Fetch document with user info
-        from sqlalchemy.orm import joinedload
-        
-        query = select(Document).options(joinedload(Document.user)).where(Document.id == document_id)
+        query = select(Document).where(Document.id == document_id)
         result = await db.execute(query)
         document = result.scalar_one_or_none()
-        
+
         if not document:
             raise NotFoundError("Document", str(document_id))
-        
-        # Ensure user is loaded
-        if not document.user:
-             # Fallback fetch
-             res = await db.execute(select(User).where(User.id == document.user_id))
-             document.user = res.scalar_one_or_none()
-
-        # Check access: Allow if owner OR if it's a demo document
-        doc_email = document.user.email if document.user else ""
-        is_demo_doc = doc_email == "demo@chunkscope.com"
-        is_owner = current_user and document.user_id == current_user.id
-        
-        if not (is_demo_doc or is_owner):
-            raise PermissionDeniedError("You don't have access to this document")
 
         if not pathlib.Path(document.file_path).exists():
             raise NotFoundError("File", document.file_path)
-            
+
         return FileResponse(
             path=document.file_path,
             filename=document.original_filename,
@@ -205,10 +182,9 @@ async def get_document_content(
 async def get_document(
     document_id: UUID,
     db: DbSession,
-    current_user: CurrentUser,
 ) -> DocumentDetailResponse:
     """Get a specific document by ID."""
-    document = await _get_user_document(db, document_id, current_user.id)
+    document = await _get_document(db, document_id)
     return DocumentDetailResponse.model_validate(document)
 
 
@@ -216,26 +192,22 @@ async def get_document(
 async def delete_document(
     document_id: UUID,
     db: DbSession,
-    current_user: CurrentUser,
 ) -> SuccessResponse:
     """Delete a document and its chunks."""
-    document = await _get_user_document(db, document_id, current_user.id)
+    document = await _get_document(db, document_id)
     await db.delete(document)
-    
+
     return SuccessResponse(message="Document deleted successfully")
 
 
-async def _get_user_document(db: DbSession, document_id: UUID, user_id: UUID) -> Document:
-    """Helper to get a document and verify ownership."""
+async def _get_document(db: DbSession, document_id: UUID) -> Document:
+    """Helper to get a document by ID."""
     result = await db.execute(
         select(Document).where(Document.id == document_id)
     )
     document = result.scalar_one_or_none()
-    
+
     if not document:
         raise NotFoundError("Document", str(document_id))
-    
-    if document.user_id != user_id:
-        raise PermissionDeniedError("You don't have access to this document")
-    
+
     return document
