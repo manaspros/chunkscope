@@ -1,14 +1,12 @@
 "use client"
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { usePipelineStore } from '@/stores/usePipelineStore'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
     getNodeDef,
@@ -27,6 +25,7 @@ import {
 } from 'lucide-react'
 import { documentsApi } from '@/lib/api'
 import { StrategyInfoDrawer } from '@/components/pipeline/StrategyInfoDrawer'
+import { FileUploadZone, isZipFile, type FileEntry } from '@/components/ui/file-upload-zone'
 
 function StrategyInfoButton({ strategyId }: { strategyId: string }) {
     const [open, setOpen] = useState(false)
@@ -62,36 +61,53 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 function DocumentUploadConfig({ nodeId, data }: { nodeId: string; data: any }) {
     const updateNodeData = usePipelineStore((s) => s.updateNodeData)
-    const fileInputRef = useRef<HTMLInputElement>(null)
     const [uploading, setUploading] = useState(false)
-    const [dragOver, setDragOver] = useState(false)
 
-    const handleFile = useCallback(async (file: File) => {
+    const handleFiles = useCallback(async (files: File[]) => {
+        if (files.length === 0) return
         setUploading(true)
         try {
-            const result = await documentsApi.uploadDocument(file)
-            updateNodeData(nodeId, {
-                uploadMode: 'file',
-                fileName: file.name,
-                documentId: result.document_id || result.id,
-            })
+            const file = files[0]
+            if (isZipFile(file)) {
+                // ZIP upload
+                const result = await documentsApi.uploadZip(file)
+                updateNodeData(nodeId, {
+                    uploadMode: 'file',
+                    fileName: file.name,
+                    documentId: result.document_id || result.id,
+                    uploadType: 'zip',
+                })
+            } else if (files.length > 1) {
+                // Folder / multi-file upload
+                const results = await documentsApi.uploadMultiple(files)
+                updateNodeData(nodeId, {
+                    uploadMode: 'file',
+                    fileName: `${files.length} files`,
+                    documentId: results[0]?.document_id || results[0]?.id,
+                    documentIds: results.map((r: any) => r.document_id || r.id),
+                    uploadType: 'folder',
+                })
+            } else {
+                // Single file upload
+                const result = await documentsApi.uploadDocument(file)
+                updateNodeData(nodeId, {
+                    uploadMode: 'file',
+                    fileName: file.name,
+                    documentId: result.document_id || result.id,
+                    uploadType: 'single',
+                })
+            }
         } catch {
             updateNodeData(nodeId, {
                 uploadMode: 'file',
-                fileName: file.name,
+                fileName: files.length === 1 ? files[0].name : `${files.length} files`,
                 documentId: null,
+                uploadType: null,
             })
         } finally {
             setUploading(false)
         }
     }, [nodeId, updateNodeData])
-
-    const handleDrop = useCallback((e: React.DragEvent) => {
-        e.preventDefault()
-        setDragOver(false)
-        const file = e.dataTransfer.files[0]
-        if (file) handleFile(file)
-    }, [handleFile])
 
     return (
         <div className="space-y-4">
@@ -128,38 +144,17 @@ function DocumentUploadConfig({ nodeId, data }: { nodeId: string; data: any }) {
                     />
                 </div>
             ) : (
-                <div
-                    onDrop={handleDrop}
-                    onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-                    onDragLeave={() => setDragOver(false)}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={cn(
-                        "flex flex-col items-center justify-center gap-2 py-8 rounded-lg border-2 border-dashed transition-all cursor-pointer",
-                        dragOver
-                            ? "border-blue-500/50 bg-blue-500/5"
-                            : "border-white/[0.06] hover:border-white/10 hover:bg-white/[0.02]"
-                    )}
-                >
-                    <Upload className={cn("w-6 h-6", dragOver ? "text-blue-400" : "text-neutral-600")} />
-                    <p className="text-[11px] text-neutral-500">
-                        {uploading ? 'Uploading...' : data.fileName ? data.fileName : 'Drop file or click to browse'}
-                    </p>
-                    {data.documentId && (
-                        <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-400">
-                            Uploaded
-                        </Badge>
-                    )}
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pdf,.txt,.md,.docx,.csv"
-                        className="hidden"
-                        onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) handleFile(file)
-                        }}
-                    />
-                </div>
+                <FileUploadZone
+                    onFiles={handleFiles}
+                    allowFolder
+                    multiple
+                    compact
+                    uploading={uploading}
+                    uploadedFileName={data.fileName}
+                    uploadSuccess={!!data.documentId}
+                    helpText="Drop any file, ZIP archive, or folder here"
+                    supportedText="PDF, TXT, MD, DOCX, CSV, JSON, XML, YAML, HTML, Python, JavaScript, TypeScript, and more"
+                />
             )}
         </div>
     )

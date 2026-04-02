@@ -74,7 +74,28 @@ export const documentsApi = {
             },
         });
         return response.data;
-    }
+    },
+    uploadZip: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await apiClient.post('/api/v1/documents/upload-zip', formData, {
+            headers: {
+                'Content-Type': undefined as unknown as string,
+            },
+        });
+        return response.data;
+    },
+    uploadMultiple: async (files: File[]) => {
+        return Promise.all(files.map((file) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            return apiClient.post('/api/v1/documents/upload', formData, {
+                headers: {
+                    'Content-Type': undefined as unknown as string,
+                },
+            }).then((r) => r.data);
+        }));
+    },
 };
 
 export const chunksApi = {

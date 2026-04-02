@@ -1,12 +1,24 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
-import { Upload, FileText, Sparkles, X } from "lucide-react"
+import { Upload, FileText, Sparkles, X, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useSuggestionStore } from "@/stores/useSuggestionStore"
+import { isBinaryFile, isZipFile } from "@/components/ui/file-upload-zone"
+
+const BINARY_EXTENSIONS = new Set([
+    "pdf", "docx", "doc", "xlsx", "xls", "pptx", "ppt",
+    "png", "jpg", "jpeg", "gif", "webp", "svg",
+    "zip", "tar", "gz", "rar", "7z",
+    "exe", "dll", "so", "dylib", "wasm",
+])
+
+function getExt(name: string): string {
+    return name.split(".").pop()?.toLowerCase() || ""
+}
 
 export function DocumentInput() {
     const {
@@ -19,13 +31,55 @@ export function DocumentInput() {
 
     const [isDragging, setIsDragging] = useState(false)
     const [fileName, setFileName] = useState<string | null>(null)
+    const [binaryWarning, setBinaryWarning] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const isLoading = isProfilingLoading || isRecommendationLoading
 
     const handleFileRead = useCallback(
-        (file: File) => {
+        async (file: File) => {
             setFileName(file.name)
+            setBinaryWarning(null)
+
+            // Binary file detection
+            if (isBinaryFile(file) && !isZipFile(file)) {
+                setBinaryWarning(
+                    "Upload this file on the Pipeline page for full processing. Text preview not available for binary files."
+                )
+                return
+            }
+
+            // ZIP file handling: try to extract first text file
+            if (isZipFile(file)) {
+                try {
+                    const JSZip = (await import("jszip")).default
+                    const zip = await JSZip.loadAsync(file)
+                    // Find the first text-like file
+                    for (const [path, entry] of Object.entries(zip.files)) {
+                        if (entry.dir) continue
+                        const ext = getExt(path)
+                        if (!BINARY_EXTENSIONS.has(ext)) {
+                            const text = await entry.async("text")
+                            if (text) {
+                                setDocumentText(text)
+                                setFileName(`${file.name} > ${path}`)
+                                return
+                            }
+                        }
+                    }
+                    // No text files found
+                    setBinaryWarning(
+                        "No text files found in ZIP archive. Upload on the Pipeline page for full processing."
+                    )
+                } catch {
+                    setBinaryWarning(
+                        "Could not read ZIP archive. Upload on the Pipeline page for full processing."
+                    )
+                }
+                return
+            }
+
+            // Regular text file
             const reader = new FileReader()
             reader.onload = (e) => {
                 const text = e.target?.result as string
@@ -68,6 +122,7 @@ export function DocumentInput() {
     const handleClear = useCallback(() => {
         setDocumentText("")
         setFileName(null)
+        setBinaryWarning(null)
         if (fileInputRef.current) fileInputRef.current.value = ""
     }, [setDocumentText])
 
@@ -106,11 +161,11 @@ export function DocumentInput() {
                             : "border-white/10 hover:border-white/20"
                     )}
                 >
-                    {!documentText ? (
+                    {!documentText && !binaryWarning ? (
                         <div className="flex flex-col items-center justify-center py-12 px-4">
                             <Upload className="w-8 h-8 text-zinc-500 mb-3" />
                             <p className="text-sm text-zinc-400 text-center">
-                                Drag & drop a text file here, or{" "}
+                                Drag & drop any file here, or{" "}
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
                                     className="text-amber-500 hover:text-amber-400 font-medium underline underline-offset-2"
@@ -119,7 +174,20 @@ export function DocumentInput() {
                                 </button>
                             </p>
                             <p className="text-xs text-zinc-600 mt-1">
-                                .txt, .md, .csv, .json supported
+                                Drop any file here (text files for instant preview, PDFs on Pipeline page)
+                            </p>
+                        </div>
+                    ) : binaryWarning ? (
+                        <div className="flex flex-col items-center justify-center py-8 px-4 gap-3">
+                            <AlertTriangle className="w-8 h-8 text-amber-500" />
+                            {fileName && (
+                                <div className="flex items-center gap-2 text-xs text-zinc-400">
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>{fileName}</span>
+                                </div>
+                            )}
+                            <p className="text-xs text-amber-400/80 text-center">
+                                {binaryWarning}
                             </p>
                         </div>
                     ) : (
@@ -141,14 +209,13 @@ export function DocumentInput() {
                     <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".txt,.md,.csv,.json,.py,.js,.ts,.html,.xml"
                         onChange={handleFileChange}
                         className="hidden"
                     />
                 </div>
 
                 {/* Paste area when no file uploaded */}
-                {!documentText && (
+                {!documentText && !binaryWarning && (
                     <Textarea
                         value={documentText}
                         onChange={(e) => setDocumentText(e.target.value)}
