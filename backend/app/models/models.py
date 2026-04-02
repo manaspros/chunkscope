@@ -52,8 +52,16 @@ class DocumentType(str, PyEnum):
     TXT = "txt"
     MD = "md"
     DOCX = "docx"
+    DOC = "doc"
     HTML = "html"
+    CSV = "csv"
+    JSON = "json"
+    XML = "xml"
+    YAML = "yaml"
     CODE = "code"
+    CONFIG = "config"
+    ZIP = "zip"
+    UNKNOWN = "unknown"
 
 
 class PipelineStatus(str, PyEnum):

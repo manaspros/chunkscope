@@ -52,16 +52,17 @@ async def test_upload_pdf_success(client: AsyncClient, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_upload_invalid_file_type(client: AsyncClient):
-    """Test rejection of invalid file types."""
+async def test_upload_unknown_file_type_accepted(client: AsyncClient):
+    """Test that unknown file types are accepted with type 'unknown'."""
     response = await client.post(
         "/api/v1/documents/upload",
         ,
         files={"file": ("test.exe", io.BytesIO(b"fake content"), "application/octet-stream")},
     )
-    
-    assert response.status_code == 400
-    assert "Invalid file type" in response.json()["error"]
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["file_type"] == "unknown"
 
 
 @pytest.mark.asyncio

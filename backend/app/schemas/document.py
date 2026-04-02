@@ -18,7 +18,9 @@ from app.schemas.common import BaseSchema, IDMixin, PaginatedResponse, Timestamp
 class DocumentCreate(BaseModel):
     """Document upload metadata."""
     original_filename: str = Field(max_length=255)
-    file_type: str = Field(description="pdf, txt, md, docx, html, code")
+    file_type: str = Field(
+        description="File type: pdf, txt, md, docx, doc, html, csv, json, xml, yaml, code, config, zip, unknown"
+    )
     doc_metadata: dict[str, Any] = Field(default_factory=dict, alias="metadata")
 
 

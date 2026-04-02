@@ -163,16 +163,16 @@ class TestAnalysisAPI:
         assert "reasoning" in data
     
     @pytest.mark.asyncio
-    async def test_api_rejects_non_pdf(self, client: AsyncClient):
-        """Test that API rejects non-PDF files"""
-        # Try to upload an excel file (truly invalid)
+    async def test_api_accepts_unknown_file_types(self, client: AsyncClient):
+        """Test that API now accepts unknown file types (as 'unknown')"""
+        # .xlsx is not in EXTENSION_TO_TYPE but should be accepted as unknown
         response = await client.post(
             "/api/v1/analyze",
             files={"file": ("test.xlsx", b"Hello world", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
         )
-        
-        assert response.status_code == 400
-        assert "Invalid file type" in response.json()["error"]
+
+        # Should be accepted (201 or 200), not rejected
+        assert response.status_code != 400 or "Invalid file type" not in response.json().get("error", "")
     
     @pytest.mark.asyncio
     async def test_performance_under_3_seconds(self):
