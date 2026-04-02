@@ -181,13 +181,71 @@ export function FileUploadZone({
         onFiles([file])
     }, [onFiles, onZipEntries, onFolderEntries])
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
+    // Recursively read all files from a dropped directory
+    const readDirectoryEntries = useCallback(async (dirEntry: FileSystemDirectoryEntry): Promise<File[]> => {
+        const files: File[] = []
+        const reader = dirEntry.createReader()
+        const readBatch = (): Promise<FileSystemEntry[]> =>
+            new Promise((resolve, reject) => reader.readEntries(resolve, reject))
+
+        let batch: FileSystemEntry[]
+        do {
+            batch = await readBatch()
+            for (const entry of batch) {
+                if (entry.isFile) {
+                    const file = await new Promise<File>((resolve, reject) =>
+                        (entry as FileSystemFileEntry).file(resolve, reject)
+                    )
+                    // Attach relative path
+                    Object.defineProperty(file, 'webkitRelativePath', {
+                        value: entry.fullPath.replace(/^\//, ''),
+                        writable: false,
+                    })
+                    files.push(file)
+                } else if (entry.isDirectory) {
+                    const subFiles = await readDirectoryEntries(entry as FileSystemDirectoryEntry)
+                    files.push(...subFiles)
+                }
+            }
+        } while (batch.length > 0)
+        return files
+    }, [])
+
+    const handleDrop = useCallback(async (e: React.DragEvent) => {
         e.preventDefault()
         setDragOver(false)
+
+        // Check if any dropped item is a directory
+        const items = e.dataTransfer.items
+        if (items && items.length > 0) {
+            const droppedFiles: File[] = []
+            let hasDirectory = false
+
+            for (let i = 0; i < items.length; i++) {
+                const entry = items[i].webkitGetAsEntry?.()
+                if (entry?.isDirectory) {
+                    hasDirectory = true
+                    const dirFiles = await readDirectoryEntries(entry as FileSystemDirectoryEntry)
+                    droppedFiles.push(...dirFiles)
+                } else if (entry?.isFile) {
+                    const file = await new Promise<File>((resolve, reject) =>
+                        (entry as FileSystemFileEntry).file(resolve, reject)
+                    )
+                    droppedFiles.push(file)
+                }
+            }
+
+            if (droppedFiles.length > 0) {
+                handleFiles(droppedFiles)
+                return
+            }
+        }
+
+        // Fallback to regular file handling
         if (e.dataTransfer.files.length > 0) {
             handleFiles(e.dataTransfer.files)
         }
-    }, [handleFiles])
+    }, [handleFiles, readDirectoryEntries])
 
     const toggleEntry = useCallback((index: number) => {
         setEntries((prev) => {
@@ -261,28 +319,38 @@ export function FileUploadZone({
                 />
             </div>
 
-            {/* Folder upload button */}
+            {/* Folder upload button - separate from main drop zone */}
             {allowFolder && (
-                <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); folderInputRef.current?.click() }}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] text-[10px] text-neutral-400 hover:text-neutral-200 transition-all"
-                >
-                    <Folder className="w-3.5 h-3.5" />
-                    Upload Folder
+                <div className="relative">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            // Programmatically click the hidden folder input
+                            if (folderInputRef.current) {
+                                folderInputRef.current.value = ""
+                                folderInputRef.current.click()
+                            }
+                        }}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10 hover:border-blue-500/50 text-[11px] text-blue-400 hover:text-blue-300 transition-all"
+                    >
+                        <Folder className="w-4 h-4" />
+                        Select Folder to Upload
+                    </button>
                     <input
                         ref={folderInputRef}
                         type="file"
-                        // @ts-expect-error -- webkitdirectory is a non-standard attribute
-                        webkitdirectory=""
-                        directory=""
-                        multiple
                         className="hidden"
+                        multiple
                         onChange={(e) => {
-                            if (e.target.files) handleFiles(e.target.files)
+                            if (e.target.files && e.target.files.length > 0) {
+                                handleFiles(e.target.files)
+                            }
                         }}
+                        {...{ webkitdirectory: "", directory: "", mozdirectory: "" } as any}
                     />
-                </button>
+                </div>
             )}
 
             {/* Upload type summary */}
