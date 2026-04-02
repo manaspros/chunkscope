@@ -26,6 +26,7 @@ import {
 import { documentsApi } from '@/lib/api'
 import { StrategyInfoDrawer } from '@/components/pipeline/StrategyInfoDrawer'
 import { FileUploadZone, isZipFile, type FileEntry } from '@/components/ui/file-upload-zone'
+import { SmartDefaultBadge, SMART_DEFAULTS } from '@/components/pipeline/SmartDefaultBadge'
 
 function StrategyInfoButton({ strategyId }: { strategyId: string }) {
     const [open, setOpen] = useState(false)
@@ -168,7 +169,12 @@ function ChunkingConfig({ nodeId, data }: { nodeId: string; data: any }) {
             <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                     <Label className="text-[10px] uppercase text-neutral-500 font-bold">Strategy</Label>
-                    <StrategyInfoButton strategyId={data.method || 'recursive'} />
+                    <div className="flex items-center gap-1">
+                        {data.method === 'recursive' && SMART_DEFAULTS['chunking.recursive'] && (
+                            <SmartDefaultBadge type={SMART_DEFAULTS['chunking.recursive'].type} reason={SMART_DEFAULTS['chunking.recursive'].reason} />
+                        )}
+                        <StrategyInfoButton strategyId={data.method || 'recursive'} />
+                    </div>
                 </div>
                 <Select
                     value={data.method || 'recursive'}
@@ -258,7 +264,12 @@ function EmbeddingConfig({ nodeId, data }: { nodeId: string; data: any }) {
     return (
         <div className="space-y-4">
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Provider</Label>
+                <div className="flex items-center justify-between">
+                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Provider</Label>
+                    {modelId === 'text-embedding-3-small' && SMART_DEFAULTS['embedding.openai.text-embedding-3-small'] && (
+                        <SmartDefaultBadge type={SMART_DEFAULTS['embedding.openai.text-embedding-3-small'].type} reason={SMART_DEFAULTS['embedding.openai.text-embedding-3-small'].reason} />
+                    )}
+                </div>
                 <Select
                     value={provider}
                     onValueChange={(val) => {
