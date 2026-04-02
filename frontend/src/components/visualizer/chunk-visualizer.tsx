@@ -203,14 +203,12 @@ export function ChunkVisualizer({
     const [isPdfLoaded, setIsPdfLoaded] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const {
-        chunks,
-        setChunks,
-        hoveredChunk,
-        selectedChunk,
-        setHoveredChunk,
-        setSelectedChunk
-    } = useChunkStore()
+    const chunks = useChunkStore((s) => s.chunks)
+    const setChunks = useChunkStore((s) => s.setChunks)
+    const hoveredChunk = useChunkStore((s) => s.hoveredChunk)
+    const selectedChunk = useChunkStore((s) => s.selectedChunk)
+    const setHoveredChunk = useChunkStore((s) => s.setHoveredChunk)
+    const setSelectedChunk = useChunkStore((s) => s.setSelectedChunk)
 
     // Sync external selection if provided
     useEffect(() => {

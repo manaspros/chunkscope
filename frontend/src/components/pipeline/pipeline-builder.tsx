@@ -18,16 +18,14 @@ import { usePipelineStore } from '@/stores/usePipelineStore'
 import { getNodeDef, CONNECTION_RULES } from '@/lib/pipeline-nodes'
 
 function PipelineBuilderInner() {
-    const {
-        nodes,
-        edges,
-        onNodesChange,
-        onEdgesChange,
-        onConnect,
-        addNode,
-        selectNode,
-        saveHistory,
-    } = usePipelineStore()
+    const nodes = usePipelineStore((s) => s.nodes)
+    const edges = usePipelineStore((s) => s.edges)
+    const onNodesChange = usePipelineStore((s) => s.onNodesChange)
+    const onEdgesChange = usePipelineStore((s) => s.onEdgesChange)
+    const onConnect = usePipelineStore((s) => s.onConnect)
+    const addNode = usePipelineStore((s) => s.addNode)
+    const selectNode = usePipelineStore((s) => s.selectNode)
+    const saveHistory = usePipelineStore((s) => s.saveHistory)
 
     const [reactFlowInstance, setReactFlowInstance] = useState<any>(null)
 

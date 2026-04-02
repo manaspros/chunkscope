@@ -1,7 +1,19 @@
 "use client"
 
 import { useCallback, useState, useEffect } from 'react'
-import { PipelineBuilder } from '@/components/pipeline/pipeline-builder'
+import dynamic from 'next/dynamic'
+
+const PipelineBuilder = dynamic(
+    () => import('@/components/pipeline/pipeline-builder').then(mod => ({ default: mod.PipelineBuilder })),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="flex-1 flex items-center justify-center bg-neutral-950 text-neutral-500 text-sm">
+                Loading pipeline builder...
+            </div>
+        ),
+    }
+)
 import { usePipelineStore } from '@/stores/usePipelineStore'
 import { ArrowLeft, Save, FolderOpen, Loader2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'

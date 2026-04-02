@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from 'framer-motion'
 import { X, Copy, Check, FileText, Hash, Layout } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -29,32 +28,9 @@ export function ChunkDetailPanel({ chunk, onClose }: ChunkDetailPanelProps) {
         }
     }
 
-    // Animation variants
-    const panelVariants = {
-        hidden: { x: '100%', opacity: 0 },
-        visible: {
-            x: 0,
-            opacity: 1,
-            transition: {
-                type: 'spring',
-                damping: 30,
-                stiffness: 300
-            }
-        },
-        exit: {
-            x: '100%',
-            opacity: 0,
-            transition: { duration: 0.2 }
-        }
-    }
-
     return (
-        <motion.div
-            variants={panelVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="fixed right-0 top-16 bottom-0 w-96 bg-neutral-900/95 border-l border-white/10 shadow-2xl z-40 backdrop-blur-xl"
+        <div
+            className="fixed right-0 top-16 bottom-0 w-96 bg-neutral-900/95 border-l border-white/10 shadow-2xl z-40 backdrop-blur-xl animate-slide-in-right"
             aria-labelledby="chunk-detail-title"
             role="dialog"
         >
@@ -145,6 +121,6 @@ export function ChunkDetailPanel({ chunk, onClose }: ChunkDetailPanelProps) {
                     </div>
                 </ScrollArea>
             </div>
-        </motion.div>
+        </div>
     )
 }

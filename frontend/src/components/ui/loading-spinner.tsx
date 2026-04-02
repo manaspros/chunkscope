@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 interface LoadingSpinnerProps {
@@ -19,24 +18,18 @@ export function LoadingSpinner({ className, size = "md" }: LoadingSpinnerProps) 
     return (
         <div className={cn("relative flex items-center justify-center", sizeClasses[size], className)}>
             {/* Outer Ring */}
-            <motion.div
-                className="absolute inset-0 border-2 border-transparent border-t-gold border-r-gold/30 rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            <div
+                className="absolute inset-0 border-2 border-transparent border-t-gold border-r-gold/30 rounded-full animate-spinner-outer"
             />
 
             {/* Middle Ring (Opposite direction) */}
-            <motion.div
-                className="absolute inset-1 border-2 border-transparent border-b-electric border-l-electric/30 rounded-full"
-                animate={{ rotate: -360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            <div
+                className="absolute inset-1 border-2 border-transparent border-b-electric border-l-electric/30 rounded-full animate-spinner-inner"
             />
 
             {/* Inner Core (Pulsing) */}
-            <motion.div
-                className="absolute w-[30%] h-[30%] bg-white rounded-full"
-                animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            <div
+                className="absolute w-[30%] h-[30%] bg-white rounded-full animate-spinner-core"
             />
         </div>
     )

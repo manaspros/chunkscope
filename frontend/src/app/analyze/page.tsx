@@ -14,9 +14,13 @@ import {
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/components/ui/use-toast';
 import { getErrorMessage } from '@/lib/utils';
-import { AnalysisResultOverlay } from '@/components/analysis/AnalysisResultOverlay';
 import { useConfigStore } from '@/stores/useConfigStore';
-import { AnimatePresence } from 'framer-motion';
+import dynamic from 'next/dynamic';
+
+const AnalysisResultOverlay = dynamic(
+    () => import('@/components/analysis/AnalysisResultOverlay').then(mod => ({ default: mod.AnalysisResultOverlay })),
+    { ssr: false }
+);
 
 interface AnalysisResult {
     document_id: string | null;
@@ -157,15 +161,13 @@ export default function AnalyzePage() {
                         </div>
 
                         {/* Analysis Report Overlay */}
-                        <AnimatePresence>
-                            {analysisResult && (
-                                <AnalysisResultOverlay
-                                    result={analysisResult}
-                                    onClose={() => setAnalysisResult(null)}
-                                    onConfirm={handleConfirmAnalysis}
-                                />
-                            )}
-                        </AnimatePresence>
+                        {analysisResult && (
+                            <AnalysisResultOverlay
+                                result={analysisResult}
+                                onClose={() => setAnalysisResult(null)}
+                                onConfirm={handleConfirmAnalysis}
+                            />
+                        )}
                     </div>
                 </div>
             </div>

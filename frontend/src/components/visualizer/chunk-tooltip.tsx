@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import type { Chunk } from '@/stores/useChunkStore'
@@ -11,31 +10,18 @@ interface ChunkTooltipProps {
 }
 
 export function ChunkTooltip({ chunk, position }: ChunkTooltipProps) {
-    // Smart Positioning Logic:
-    // We want to prevent the tooltip from clipping off the right or bottom edges.
-    // We assume a viewport-based calculation (simplistic approach for now).
-    // In a real app, we might use `getBoundingClientRect` of the window.
-
-    // Offset to ensure cursor doesn't obscure content
     const OFFSET_X = 15;
     const OFFSET_Y = 15;
 
-    // We can't know window size in SSR easily, but for client component we can check window.
-    // For safety, we just render near mouse. In a production app, we would use
-    // `useMeasure` or similar to flip coordinates if x > window.width - 300.
-
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+        <div
+            className="animate-tooltip-in"
             style={{
                 position: 'fixed',
                 left: position.x + OFFSET_X,
                 top: position.y + OFFSET_Y,
                 zIndex: 50,
-                pointerEvents: 'none', // Critical: allows mouse events to pass through to canvas
+                pointerEvents: 'none',
                 maxWidth: '320px'
             }}
         >
@@ -63,6 +49,6 @@ export function ChunkTooltip({ chunk, position }: ChunkTooltipProps) {
                     </div>
                 </div>
             </Card>
-        </motion.div>
+        </div>
     )
 }

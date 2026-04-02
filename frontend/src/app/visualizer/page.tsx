@@ -4,15 +4,28 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, FileText } from 'lucide-react'
-import { motion } from 'framer-motion'
+
+
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToast } from '@/components/ui/use-toast'
 import { pipelinesApi, documentsApi, chunksApi } from '@/lib/api'
 import { useConfigStore, ChunkingMethod } from '@/stores/useConfigStore'
 import { useChunkStore } from '@/stores/useChunkStore'
 import { ChunkConfigPanel } from '@/components/visualizer/chunk-config-panel'
-import { ChunkVisualizer } from '@/components/visualizer/chunk-visualizer'
 import { ChunkDetailPanel } from '@/components/visualizer/chunk-detail-panel'
+import dynamic from 'next/dynamic'
+
+const ChunkVisualizer = dynamic(
+    () => import('@/components/visualizer/chunk-visualizer').then(mod => ({ default: mod.ChunkVisualizer })),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="flex-1 flex items-center justify-center bg-neutral-950 text-neutral-500 text-sm">
+                <LoadingSpinner size="md" />
+            </div>
+        ),
+    }
+)
 import { DEMO_PDF_URL, MOCK_CHUNKS } from '@/lib/mock-data'
 
 import { getErrorMessage } from '@/lib/utils'
@@ -23,13 +36,14 @@ import { Suspense } from 'react'
 function VisualizerContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const {
-        selectedDocId,
-        setSelectedDocId,
-    } = useConfigStore()
+    const selectedDocId = useConfigStore((s) => s.selectedDocId)
+    const setSelectedDocId = useConfigStore((s) => s.setSelectedDocId)
 
     const [isLoading, setIsLoading] = useState(false)
-    const { chunks, setChunks, selectedChunk, setSelectedChunk } = useChunkStore()
+    const chunks = useChunkStore((s) => s.chunks)
+    const setChunks = useChunkStore((s) => s.setChunks)
+    const selectedChunk = useChunkStore((s) => s.selectedChunk)
+    const setSelectedChunk = useChunkStore((s) => s.setSelectedChunk)
     const [pdfUrl, setPdfUrl] = useState(DEMO_PDF_URL)
     const [docDetails, setDocDetails] = useState<any>(null)
 
@@ -159,13 +173,11 @@ function VisualizerContent() {
                             </div>
                         </div>
                         {selectedChunk && (
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="px-3 py-1.5 bg-gold/10 backdrop-blur-md rounded border border-gold/20 text-[10px] font-mono text-gold uppercase tracking-widest"
+                            <div
+                                className="px-3 py-1.5 bg-gold/10 backdrop-blur-md rounded border border-gold/20 text-[10px] font-mono text-gold uppercase tracking-widest animate-slide-in-left"
                             >
                                 SELECTED INDEX &nbsp; <span className="font-bold text-white">#{chunks.indexOf(selectedChunk) + 1}</span>
-                            </motion.div>
+                            </div>
                         )}
                     </div>
 

@@ -5,13 +5,22 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useConfigStore } from "@/stores/useConfigStore"
 import { analyzerApi } from "@/lib/api"
-import { motion } from "framer-motion"
 import { ArrowRight, Database, Github, Search, Eye, GitBranch, Layers, Zap, Cpu } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { DocumentSelectionModal } from "@/components/presets/DocumentSelectionModal"
+
+
 import { useToast } from "@/components/ui/use-toast"
-import { AnimatePresence } from "framer-motion"
-import { AnalysisResultOverlay } from "@/components/analysis/AnalysisResultOverlay"
+import dynamic from "next/dynamic"
+
+const AnalysisResultOverlay = dynamic(
+    () => import("@/components/analysis/AnalysisResultOverlay").then(mod => ({ default: mod.AnalysisResultOverlay })),
+    { ssr: false }
+)
+
+const DocumentSelectionModalLazy = dynamic(
+    () => import("@/components/presets/DocumentSelectionModal").then(mod => ({ default: mod.DocumentSelectionModal })),
+    { ssr: false }
+)
 
 export default function Home() {
     const router = useRouter()
@@ -20,8 +29,6 @@ export default function Home() {
     const [isAnalyzing, setIsAnalyzing] = React.useState(false)
     const setSelectedDocId = useConfigStore((state) => state.setSelectedDocId)
     const [isUploadModalOpen, setIsUploadModalOpen] = React.useState(false)
-
-    const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 })
 
     const handleFileSelect = () => {
         fileInputRef.current?.click()
@@ -80,16 +87,8 @@ export default function Home() {
         handleVisualize(docId)
     }
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        const { clientX, clientY } = e
-        const x = (clientX / window.innerWidth - 0.5) * 20
-        const y = (clientY / window.innerHeight - 0.5) * 20
-        setMousePos({ x, y })
-    }
-
     return (
         <main
-            onMouseMove={handleMouseMove}
             className="relative min-h-screen text-white font-sans overflow-x-hidden selection:bg-orange-500/30 selection:text-orange-200"
         >
 
@@ -122,15 +121,8 @@ export default function Home() {
 
                 {/* Hero Section */}
                 <section className="min-h-screen flex flex-col items-center justify-center px-4 pt-32 pb-40 w-full max-w-5xl mx-auto text-center relative">
-                    <motion.div
-                        style={{
-                            x: mousePos.x,
-                            y: mousePos.y,
-                        }}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                        className="space-y-12"
+                    <div
+                        className="space-y-12 animate-fade-in-up"
                     >
                         {/* Status Badge */}
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[8px] font-black tracking-[0.4em] uppercase text-zinc-500 mb-4 shadow-[0_0_20px_rgba(255,255,255,0.02)]">
@@ -154,25 +146,7 @@ export default function Home() {
 
                         {/* Quick Analyze Component */}
                         <div className="max-w-xl mx-auto p-[1px] bg-white/10 rounded-[2.5rem] group transition-all relative overflow-hidden backdrop-blur-md">
-                            <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                className="absolute -top-32 -left-32 w-64 h-64 border border-orange-500/5 rounded-full pointer-events-none"
-                            />
-
-                            <motion.div
-                                animate={{
-                                    top: ["-10%", "110%"],
-                                }}
-                                transition={{
-                                    duration: 4,
-                                    repeat: Infinity,
-                                    ease: "linear",
-                                }}
-                                className="absolute left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-orange-400 to-transparent z-20 opacity-0 group-hover:opacity-100 blur-[0.5px]"
-                            />
-
-                            <div className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.4rem] overflow-hidden relative z-30 border border-white/5 m-[1px]">
+                            <div className="bg-neutral-900/40 backdrop-blur-xl rounded-[2.4rem] overflow-hidden relative z-30 border border-white/5 m-[1px]">
                                 <input
                                     type="file"
                                     ref={fileInputRef}
@@ -236,15 +210,13 @@ export default function Home() {
                                 Pipeline Builder
                             </Link>
                         </div>
-                    </motion.div>
+                    </div>
 
                     {/* Scroll Indicator */}
                     <div className="absolute bottom-12 flex flex-col items-center gap-3 pointer-events-none w-full">
                         <span className="text-[7px] font-black uppercase tracking-[0.5em] text-zinc-700 animate-pulse">Scan Below</span>
-                        <motion.div
-                            animate={{ y: [0, 10, 0] }}
-                            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                            className="w-[1px] h-10 bg-gradient-to-b from-orange-500 to-transparent opacity-40"
+                        <div
+                            className="w-[1px] h-10 bg-gradient-to-b from-orange-500 to-transparent opacity-40 animate-bounce-y"
                         />
                     </div>
                 </section>
@@ -263,10 +235,8 @@ export default function Home() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         {/* Analyzer Card */}
                         <Link href="/analyze">
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="group relative p-5 rounded-xl bg-white/5 backdrop-blur-lg border border-white/10 overflow-hidden hover:border-blue-500/50 transition-all cursor-pointer h-full flex flex-col"
+                            <div
+                                className="group relative p-5 rounded-xl bg-white/5 backdrop-blur-lg border border-white/10 overflow-hidden hover:border-blue-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer h-full flex flex-col"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <div className="relative z-10 flex flex-col h-full">
@@ -281,15 +251,13 @@ export default function Home() {
                                         Go to Tool <ArrowRight className="w-3 h-3 ml-2" />
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
                         </Link>
 
                         {/* Visualizer Card */}
                         <div className="group">
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="group relative p-6 rounded-[2rem] bg-white/[0.03] backdrop-blur-xl border border-white/10 overflow-hidden hover:border-orange-500/50 transition-all cursor-pointer h-full flex flex-col justify-between"
+                            <div
+                                className="group relative p-6 rounded-[2rem] bg-white/[0.03] backdrop-blur-xl border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer h-full flex flex-col justify-between"
                             >
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-3xl rounded-full -mr-16 -mt-16 opacity-50 transition-opacity group-hover:opacity-80" />
 
@@ -320,15 +288,13 @@ export default function Home() {
                                         Upload New
                                     </button>
                                 </div>
-                            </motion.div>
+                            </div>
                         </div>
 
                         {/* Builder Card */}
                         <Link href="/pipeline">
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="group relative p-5 rounded-xl bg-white/5 backdrop-blur-lg border border-white/10 overflow-hidden hover:border-purple-500/50 transition-all cursor-pointer h-full flex flex-col"
+                            <div
+                                className="group relative p-5 rounded-xl bg-white/5 backdrop-blur-lg border border-white/10 overflow-hidden hover:border-purple-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer h-full flex flex-col"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <div className="relative z-10 flex flex-col h-full">
@@ -343,7 +309,7 @@ export default function Home() {
                                         Go to Tool <ArrowRight className="w-3 h-3 ml-2" />
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
                         </Link>
                     </div>
                 </section>
@@ -386,28 +352,26 @@ export default function Home() {
                     </p>
                 </section>
 
-                <AnimatePresence>
-                    {analysisResult && (
-                        <AnalysisResultOverlay
-                            result={analysisResult}
-                            onClose={() => setAnalysisResult(null)}
-                            onConfirm={handleConfirmAnalysis}
-                        />
-                    )}
+                {analysisResult && (
+                    <AnalysisResultOverlay
+                        result={analysisResult}
+                        onClose={() => setAnalysisResult(null)}
+                        onConfirm={handleConfirmAnalysis}
+                    />
+                )}
 
-                    {isUploadModalOpen && (
-                        <DocumentSelectionModal
-                            isOpen={isUploadModalOpen}
-                            onClose={() => setIsUploadModalOpen(false)}
-                            onSuccess={handleUploadSuccess}
-                            onUseDemo={() => {
-                                toast({ title: "Demo Mode", description: "Demo document selected. Entering visualizer..." })
-                                handleVisualize("demo-id")
-                            }}
-                            presetName="Visualizer"
-                        />
-                    )}
-                </AnimatePresence>
+                {isUploadModalOpen && (
+                    <DocumentSelectionModalLazy
+                        isOpen={isUploadModalOpen}
+                        onClose={() => setIsUploadModalOpen(false)}
+                        onSuccess={handleUploadSuccess}
+                        onUseDemo={() => {
+                            toast({ title: "Demo Mode", description: "Demo document selected. Entering visualizer..." })
+                            handleVisualize("demo-id")
+                        }}
+                        presetName="Visualizer"
+                    />
+                )}
             </div>
         </main>
     )

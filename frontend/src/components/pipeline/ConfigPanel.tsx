@@ -26,7 +26,8 @@ import {
     ArrowUpDown, MessageSquare, BarChart3, Eye, AlertCircle,
 } from 'lucide-react'
 import { documentsApi } from '@/lib/api'
-import { motion, AnimatePresence } from 'framer-motion'
+
+
 
 const ICON_MAP: Record<string, React.ElementType> = {
     FileUp, Scissors, BrainCircuit, Database, Search, ArrowUpDown,
@@ -651,15 +652,11 @@ export function ConfigPanel() {
     const IconComponent = nodeDef ? (ICON_MAP[nodeDef.icon] || Database) : Database
 
     return (
-        <AnimatePresence mode="wait">
+        <>
             {selectedNode && nodeDef ? (
-                <motion.div
+                <div
                     key={selectedNodeId}
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: 20, opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="flex flex-col h-full w-72 bg-neutral-950/80 backdrop-blur-xl border-l border-white/[0.06]"
+                    className="flex flex-col h-full w-72 bg-neutral-950/80 backdrop-blur-xl border-l border-white/[0.06] animate-slide-in-left"
                 >
                     {/* Header */}
                     <div className={cn("flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06]", colors.bg)}>
@@ -685,11 +682,9 @@ export function ConfigPanel() {
                             <NodePreviewPanel nodeId={selectedNode.id} />
                         </div>
                     </ScrollArea>
-                </motion.div>
+                </div>
             ) : (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                <div
                     className="flex flex-col items-center justify-center h-full w-72 bg-neutral-950/80 backdrop-blur-xl border-l border-white/[0.06]"
                 >
                     <div className="text-center px-6">
@@ -699,8 +694,8 @@ export function ConfigPanel() {
                         <p className="text-[11px] text-neutral-500 font-medium">Select a node</p>
                         <p className="text-[9px] text-neutral-600 mt-1">Click on any node to configure it</p>
                     </div>
-                </motion.div>
+                </div>
             )}
-        </AnimatePresence>
+        </>
     )
 }

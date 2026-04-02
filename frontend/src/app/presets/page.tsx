@@ -3,7 +3,8 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
+
+
 import { ArrowLeft, BookOpen, FileText, Scale, Stethoscope, Code, ExternalLink } from "lucide-react"
 import { DocumentSelectionModal } from "@/components/presets/DocumentSelectionModal"
 import { presetsApi } from "@/lib/api"
@@ -123,11 +124,10 @@ export default function PresetsPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {presets.map((preset) => (
-                            <motion.div
+                            <div
                                 key={preset.id}
-                                whileHover={{ scale: 1.02 }}
                                 onClick={() => handlePresetClick(preset)}
-                                className={`group relative p-6 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 ${preset.border} hover:shadow-[0_0_30px_rgba(0,0,0,0.5)] transition-all cursor-pointer overflow-hidden active:scale-95`}
+                                className={`group relative p-6 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 ${preset.border} hover:shadow-[0_0_30px_rgba(0,0,0,0.5)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer overflow-hidden`}
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
 
@@ -158,13 +158,12 @@ export default function PresetsPage() {
                                         Use Template <ExternalLink className="w-3 h-3" />
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
                         ))}
                     </div>
                 </div>
 
-                <AnimatePresence>
-                    {isModalOpen && (
+                {isModalOpen && (
                         <DocumentSelectionModal
                             isOpen={isModalOpen}
                             onClose={() => setIsModalOpen(false)}
@@ -177,7 +176,6 @@ export default function PresetsPage() {
                             presetName={selectedPreset?.title || ""}
                         />
                     )}
-                </AnimatePresence>
             </div>
     )
 }

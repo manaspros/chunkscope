@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { Settings2, Play, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -18,14 +17,16 @@ interface ChunkConfigPanelProps {
 }
 
 export function ChunkConfigPanel({ documentId }: ChunkConfigPanelProps) {
-    const {
-        method, setMethod,
-        chunkSize, setChunkSize,
-        overlap, setOverlap,
-        threshold, setThreshold
-    } = useConfigStore()
+    const method = useConfigStore((s) => s.method)
+    const setMethod = useConfigStore((s) => s.setMethod)
+    const chunkSize = useConfigStore((s) => s.chunkSize)
+    const setChunkSize = useConfigStore((s) => s.setChunkSize)
+    const overlap = useConfigStore((s) => s.overlap)
+    const setOverlap = useConfigStore((s) => s.setOverlap)
+    const threshold = useConfigStore((s) => s.threshold)
+    const setThreshold = useConfigStore((s) => s.setThreshold)
 
-    const { setChunks } = useChunkStore()
+    const setChunks = useChunkStore((s) => s.setChunks)
 
     const [isProcessing, setIsProcessing] = useState(false)
 
@@ -69,11 +70,8 @@ export function ChunkConfigPanel({ documentId }: ChunkConfigPanelProps) {
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="w-full max-w-sm space-y-4"
+        <div
+            className="w-full max-w-sm space-y-4 animate-slide-in-left"
         >
             <Card className="p-5 bg-neutral-900/80 backdrop-blur-md border-white/10 shadow-lg">
                 <div className="flex items-center gap-2 mb-6">
@@ -183,6 +181,6 @@ export function ChunkConfigPanel({ documentId }: ChunkConfigPanelProps) {
                 </div>
 
             </Card>
-        </motion.div>
+        </div>
     )
 }

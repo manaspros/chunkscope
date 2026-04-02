@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { motion } from "framer-motion"
 import {
     LayoutDashboard,
     Search,
@@ -20,10 +19,11 @@ import {
 } from "lucide-react"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { documentsApi, pipelinesApi } from "@/lib/api"
-import { useConfigStore } from "@/stores/useConfigStore"
+import { useConfigStore } from '@/stores/useConfigStore'
 import { DocumentSelectionModal } from "@/components/presets/DocumentSelectionModal"
 import { useToast } from "@/components/ui/use-toast"
-import { AnimatePresence } from "framer-motion"
+
+
 
 export default function DashboardPage() {
     const router = useRouter()
@@ -36,7 +36,7 @@ export default function DashboardPage() {
         cost: 0.00
     })
 
-    const { setSelectedDocId } = useConfigStore()
+    const setSelectedDocId = useConfigStore((s) => s.setSelectedDocId)
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
 
@@ -115,36 +115,21 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-3 gap-6 lg:gap-10 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 px-8 shadow-2xl relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                         <div className="text-center px-2 relative z-10">
-                            <motion.div
-                                key={stats.docs}
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-lg font-mono font-black text-gold"
-                            >
+                            <div className="text-lg font-mono font-black text-gold">
                                 {stats.docs}
-                            </motion.div>
+                            </div>
                             <div className="text-[9px] uppercase font-black tracking-[0.2em] text-zinc-500">Docs</div>
                         </div>
                         <div className="text-center px-2 relative z-10">
-                            <motion.div
-                                key={stats.chunks}
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-lg font-mono font-black text-orange-500"
-                            >
+                            <div className="text-lg font-mono font-black text-orange-500">
                                 {stats.chunks > 1000 ? `${(stats.chunks / 1000).toFixed(1)}k` : stats.chunks}
-                            </motion.div>
+                            </div>
                             <div className="text-[9px] uppercase font-black tracking-[0.2em] text-zinc-500">Chunks</div>
                         </div>
                         <div className="text-center px-2 relative z-10">
-                            <motion.div
-                                key={stats.cost}
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-lg font-mono font-black text-cyan-400"
-                            >
+                            <div className="text-lg font-mono font-black text-cyan-400">
                                 ${stats.cost.toFixed(2)}
-                            </motion.div>
+                            </div>
                             <div className="text-[9px] uppercase font-black tracking-[0.2em] text-zinc-500">Est. Cost</div>
                         </div>
                     </div>
@@ -160,12 +145,11 @@ export default function DashboardPage() {
                                     <p className="text-[9px] text-zinc-600 font-medium">REAL-TIME SYSTEM THROUGHPUT</p>
                                 </div>
                                 <div className="flex gap-1.5 items-end h-6">
-                                    {[...Array(8)].map((_, i) => (
-                                        <motion.div
+                                    {[40, 60, 35, 70, 55, 45, 65, 50].map((h, i) => (
+                                        <div
                                             key={i}
-                                            animate={{ height: [`${20 + Math.random() * 40}%`, `${40 + Math.random() * 60}%`, `${20 + Math.random() * 40}%`] }}
-                                            transition={{ duration: 1.5 + Math.random(), repeat: Infinity, ease: "easeInOut" }}
                                             className="w-1 rounded-full bg-blue-500/40"
+                                            style={{ height: `${h}%` }}
                                         />
                                     ))}
                                 </div>
@@ -178,12 +162,10 @@ export default function DashboardPage() {
                                 </div>
                             ) : (
                                 [...Array(32)].map((_, i) => (
-                                    <motion.div
+                                    <div
                                         key={i}
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${20 + (Math.sin(i * 0.5 + Date.now() * 0.001) + 1) * 35}%` }}
-                                        transition={{ type: "spring", stiffness: 50 }}
-                                        className="flex-1 bg-gradient-to-t from-blue-600/30 via-blue-400/10 to-transparent rounded-t-sm border-t border-blue-400/20"
+                                        className="flex-1 bg-gradient-to-t from-blue-600/30 via-blue-400/10 to-transparent rounded-t-sm border-t border-blue-400/20 transition-all duration-500"
+                                        style={{ height: `${20 + (Math.sin(i * 0.5) + 1) * 35}%` }}
                                     />
                                 ))
                             )}
@@ -382,8 +364,7 @@ export default function DashboardPage() {
                         </table>
                     </div>
                 </Card>
-                <AnimatePresence>
-                    {isUploadModalOpen && (
+                {isUploadModalOpen && (
                         <DocumentSelectionModal
                             isOpen={isUploadModalOpen}
                             onClose={() => setIsUploadModalOpen(false)}
@@ -395,7 +376,6 @@ export default function DashboardPage() {
                             presetName="Visualizer"
                         />
                     )}
-                </AnimatePresence>
             </div >
         </div >
     )
