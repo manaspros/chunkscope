@@ -145,10 +145,10 @@ function VisualizerContent() {
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
-                        <ChunkConfigPanel />
+                        <ChunkConfigPanel documentId={selectedDocId} />
                     </div>
 
-                    <div className="p-4 border-t border-white/5 bg-black/40 shrink-0">
+                    <div className="p-4 border-t border-white/5 bg-black/40 shrink-0 space-y-2">
                         <button
                             className="w-full py-2.5 bg-orange-500 text-black text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-orange-600 hover:scale-[1.01] transition-all active:scale-95 disabled:opacity-50 shadow-[0_0_20px_rgba(245,183,0,0.1)]"
                             onClick={handleProcess}
@@ -156,6 +156,14 @@ function VisualizerContent() {
                         >
                             {isLoading ? <LoadingSpinner size="sm" /> : "Execute Strategy"}
                         </button>
+                        {chunks.length > 0 && (
+                            <button
+                                className="w-full py-2.5 bg-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-blue-500/30 hover:bg-blue-500/30 hover:scale-[1.01] transition-all active:scale-95 flex items-center justify-center gap-2"
+                                onClick={() => router.push('/pipeline')}
+                            >
+                                Build Pipeline <ArrowRight className="w-3 h-3" />
+                            </button>
+                        )}
                     </div>
                 </div>
 
