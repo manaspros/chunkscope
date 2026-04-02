@@ -34,12 +34,14 @@ async def upload_document(
     background_tasks: BackgroundTasks,
     db: DbSession,
     file: UploadFile = File(..., description="Any document file to upload"),
+    project_id: UUID | None = Query(default=None, description="Optional project to link document to"),
 ) -> DocumentResponse:
     """
     Upload a document for processing.
 
     Accepts any common file type up to 100MB.
     ZIP files are auto-detected and routed to ZIP processing.
+    Optionally link the document to a project via project_id query param.
     """
     # Validate file
     try:
@@ -72,6 +74,7 @@ async def upload_document(
         file_size_bytes=file_size,
         doc_metadata={},
         is_processed=False,
+        project_id=project_id,
     )
     db.add(document)
     await db.flush()

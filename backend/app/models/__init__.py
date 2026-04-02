@@ -5,6 +5,7 @@ from .base import Base, TimestampMixin
 from .models import (
     Pipeline,
     PipelineVersion,
+    Project,
     Document,
     Chunk,
     TestDataset,
@@ -26,6 +27,7 @@ __all__ = [
     # Models
     "Pipeline",
     "PipelineVersion",
+    "Project",
     "Document",
     "Chunk",
     "TestDataset",

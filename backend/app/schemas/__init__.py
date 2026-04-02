@@ -53,6 +53,14 @@ from app.schemas.pipeline import (
     PipelineResponse,
     PipelineUpdate,
 )
+from app.schemas.project_schemas import (
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectResponse,
+    ProjectFileInfo,
+    ProjectDetailResponse,
+    ProjectListResponse,
+)
 
 __all__ = [
     # Common
@@ -101,4 +109,11 @@ __all__ = [
     "PipelineValidateRequest",
     "PipelineValidateResponse",
     "ValidationIssue",
+    # Project
+    "ProjectCreate",
+    "ProjectUpdate",
+    "ProjectResponse",
+    "ProjectFileInfo",
+    "ProjectDetailResponse",
+    "ProjectListResponse",
 ]

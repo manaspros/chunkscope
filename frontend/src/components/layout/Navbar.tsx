@@ -27,6 +27,12 @@ export function Navbar() {
                         Builder
                     </Link>
                     <Link
+                        href="/projects"
+                        className={cn("hover:text-white transition-colors", isActive('/projects') && "text-white font-semibold")}
+                    >
+                        Projects
+                    </Link>
+                    <Link
                         href="/suggestions"
                         className={cn("hover:text-white transition-colors", isActive('/suggestions') && "text-white font-semibold")}
                     >

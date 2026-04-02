@@ -5,7 +5,7 @@ Defines all database tables with SQLAlchemy ORM
 from datetime import datetime
 from enum import Enum as PyEnum
 from typing import Any, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
     BigInteger,
@@ -168,6 +168,28 @@ class PipelineVersion(Base):
     chunks: Mapped[list["Chunk"]] = relationship(back_populates="pipeline_version")
 
 
+class Project(Base, TimestampMixin):
+    """A collection of files forming a RAG knowledge base."""
+
+    __tablename__ = "projects"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Corpus stats (updated on file add/remove)
+    total_files: Mapped[int] = mapped_column(Integer, default=0)
+    total_chunks: Mapped[int] = mapped_column(Integer, default=0)
+    dominant_doc_type: Mapped[Optional[str]] = mapped_column(String(50))
+    corpus_config: Mapped[dict] = mapped_column(JSON, default=dict)  # recommended RAG config
+
+    # Status
+    status: Mapped[str] = mapped_column(String(20), default="active")  # active, archived
+
+    # Relationships
+    documents: Mapped[list["Document"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+
+
 class Document(Base, TimestampMixin):
     """Uploaded documents."""
 
@@ -186,6 +208,10 @@ class Document(Base, TimestampMixin):
     extracted_text: Mapped[Optional[str]] = mapped_column(Text)
 
     is_processed: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Project link
+    project_id: Mapped[Optional[UUID]] = mapped_column(Uuid, ForeignKey("projects.id", ondelete="CASCADE"), index=True, nullable=True)
+    project: Mapped[Optional["Project"]] = relationship(back_populates="documents")
 
     # Relationships
     chunks: Mapped[list["Chunk"]] = relationship(back_populates="document", cascade="all, delete-orphan")

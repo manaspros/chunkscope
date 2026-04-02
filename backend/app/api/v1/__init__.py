@@ -19,6 +19,7 @@ from app.api.v1.rerank import router as rerank_router
 from app.api.v1.query import router as query_router
 from app.api.v1.guide import router as guide_router
 from app.api.v1.suggestions import router as suggestions_router
+from app.api.v1.projects import router as projects_router
 
 __all__ = [
     "analysis_router",
@@ -36,6 +37,7 @@ __all__ = [
     "pipelines_router",
     "presets_router",
     "preview_router",
+    "projects_router",
     "query_router",
     "rerank_router",
     "suggestions_router",

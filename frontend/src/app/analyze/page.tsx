@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { analyzerApi, documentsApi } from '@/lib/api';
+import { analyzerApi, documentsApi, projectsApi } from '@/lib/api';
 import {
     ArrowRight,
     Sparkles,
@@ -13,6 +13,7 @@ import {
     Loader2,
     ChevronDown,
     ChevronUp,
+    Save,
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/components/ui/use-toast';
@@ -36,9 +37,38 @@ export default function AnalyzePage() {
     const [analysisResult, setAnalysisResult] = useState<any | null>(null);
     const [corpusResult, setCorpusResult] = useState<any | null>(null);
     const [showFileList, setShowFileList] = useState(false);
+    const [savingProject, setSavingProject] = useState(false);
     const setSelectedDocId = useConfigStore((state) => state.setSelectedDocId);
     const router = useRouter();
     const { toast } = useToast();
+
+    const handleSaveAsProject = async () => {
+        if (!corpusResult && !analysisResult) return;
+        setSavingProject(true);
+        try {
+            const name = `Analysis - ${new Date().toLocaleDateString()}`;
+            const project = await projectsApi.create({
+                name,
+                description: corpusResult
+                    ? `Corpus of ${corpusResult.corpus_summary?.total_files || files.length} files (${corpusResult.corpus_summary?.dominant_doc_type || 'mixed'})`
+                    : `Single file analysis`,
+            });
+            // Upload files to the project
+            if (files.length === 1 && !isZipFile(files[0])) {
+                await projectsApi.uploadFile(project.id, files[0]);
+            } else if (files.length === 1 && isZipFile(files[0])) {
+                await projectsApi.uploadZip(project.id, files[0]);
+            } else {
+                await projectsApi.uploadFiles(project.id, files);
+            }
+            toast({ title: 'Saved as project', description: `Created project "${name}"` });
+            router.push(`/projects/${project.id}`);
+        } catch (error) {
+            toast({ title: 'Failed to save project', description: getErrorMessage(error), variant: 'destructive' });
+        } finally {
+            setSavingProject(false);
+        }
+    };
 
     const handleFiles = useCallback((incoming: File[]) => {
         setFiles(incoming);
@@ -296,6 +326,14 @@ export default function AnalyzePage() {
                                         className="px-6 py-3 text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors"
                                     >
                                         Dismiss
+                                    </button>
+                                    <button
+                                        onClick={handleSaveAsProject}
+                                        disabled={savingProject}
+                                        className="py-3 px-5 border border-amber-500/30 text-amber-400 font-black text-[11px] uppercase tracking-widest rounded-2xl hover:bg-amber-500/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {savingProject ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                        Save as Project
                                     </button>
                                     <button
                                         onClick={() => handleConfirmAnalysis(corpusResult.corpus_recommendation)}

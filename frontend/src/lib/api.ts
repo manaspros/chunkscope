@@ -180,6 +180,73 @@ export const guideApi = {
     },
 };
 
+export const projectsApi = {
+    list: async () => {
+        const response = await apiClient.get('/api/v1/projects');
+        return response.data;
+    },
+    create: async (data: { name: string; description?: string }) => {
+        const response = await apiClient.post('/api/v1/projects', data);
+        return response.data;
+    },
+    get: async (id: string) => {
+        const response = await apiClient.get(`/api/v1/projects/${id}`);
+        return response.data;
+    },
+    update: async (id: string, data: { name?: string; description?: string; status?: string }) => {
+        const response = await apiClient.patch(`/api/v1/projects/${id}`, data);
+        return response.data;
+    },
+    delete: async (id: string) => {
+        const response = await apiClient.delete(`/api/v1/projects/${id}`);
+        return response.data;
+    },
+    uploadFile: async (id: string, file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await apiClient.post(`/api/v1/projects/${id}/upload`, formData, {
+            headers: { 'Content-Type': undefined as unknown as string },
+        });
+        return response.data;
+    },
+    uploadFiles: async (id: string, files: File[]) => {
+        const formData = new FormData();
+        files.forEach(f => formData.append('files', f));
+        const response = await apiClient.post(`/api/v1/projects/${id}/upload-folder`, formData, {
+            headers: { 'Content-Type': undefined as unknown as string },
+        });
+        return response.data;
+    },
+    uploadZip: async (id: string, file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await apiClient.post(`/api/v1/projects/${id}/upload-zip`, formData, {
+            headers: { 'Content-Type': undefined as unknown as string },
+        });
+        return response.data;
+    },
+    analyze: async (id: string) => {
+        const response = await apiClient.post(`/api/v1/projects/${id}/analyze`, null, {
+            timeout: 120000,
+        });
+        return response.data;
+    },
+    chunk: async (id: string, config: any) => {
+        const response = await apiClient.post(`/api/v1/projects/${id}/chunk`, config);
+        return response.data;
+    },
+    getChunks: async (id: string, page?: number) => {
+        const response = await apiClient.get(`/api/v1/projects/${id}/chunks`, {
+            params: page ? { page } : {},
+        });
+        return response.data;
+    },
+    removeFile: async (id: string, fileId: string) => {
+        const response = await apiClient.delete(`/api/v1/projects/${id}/files/${fileId}`);
+        return response.data;
+    },
+};
+
 export const analyzerApi = {
     analyzeDocument: async (file: File) => {
         const formData = new FormData();
