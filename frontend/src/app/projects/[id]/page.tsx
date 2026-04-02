@@ -19,6 +19,8 @@ import {
     CheckCircle2,
     XCircle,
     Clock,
+    BrainCircuit,
+    Wand2,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { FileUploadZone, isZipFile } from '@/components/ui/file-upload-zone';
@@ -73,6 +75,8 @@ export default function ProjectDetailPage() {
     const [chunkMethod, setChunkMethod] = useState('recursive');
     const [chunkSize, setChunkSize] = useState(512);
     const [chunkOverlap, setChunkOverlap] = useState(50);
+    const [aiChunking, setAiChunking] = useState(false);
+    const [aiChunkingStep, setAiChunkingStep] = useState('');
 
     const fetchProject = useCallback(async () => {
         try {
@@ -174,6 +178,47 @@ export default function ProjectDetailPage() {
             router.push('/projects');
         } catch (error) {
             toast({ title: 'Failed to delete project', description: getErrorMessage(error), variant: 'destructive' });
+        }
+    };
+
+    const handleAiChunking = async () => {
+        setAiChunking(true);
+        try {
+            // Step 1: Analyze corpus
+            setAiChunkingStep('Analyzing corpus...');
+            const analysis = await projectsApi.analyze(projectId);
+            setAnalysisResult(analysis);
+            setShowAnalysis(true);
+
+            const rec = analysis.corpus_recommendation || {};
+            const method = rec.chunking_method || 'recursive';
+            const size = rec.chunk_size || 512;
+            const overlap = rec.overlap || 50;
+
+            // Update local config to show what AI chose
+            setChunkMethod(method);
+            setChunkSize(size);
+            setChunkOverlap(overlap);
+
+            // Step 2: Chunk with AI-recommended settings
+            setAiChunkingStep(`Chunking with ${method} (${size} tokens)...`);
+            const result = await projectsApi.chunk(projectId, {
+                chunking_method: method,
+                chunk_size: size,
+                overlap: overlap,
+            });
+
+            toast({
+                title: 'AI Chunking Complete',
+                description: `Analyzed corpus → recommended ${method} chunking → created ${result.total_chunks} chunks across ${result.files?.length || 0} files`,
+            });
+
+            fetchProject();
+        } catch (error) {
+            toast({ title: 'AI Chunking failed', description: getErrorMessage(error), variant: 'destructive' });
+        } finally {
+            setAiChunking(false);
+            setAiChunkingStep('');
         }
     };
 
@@ -388,13 +433,37 @@ export default function ProjectDetailPage() {
                         <div className="p-6 rounded-2xl bg-black/30 border border-white/5 space-y-3">
                             <h2 className="text-sm font-bold text-zinc-300 mb-1">Actions</h2>
 
+                            {/* AI Analysis & Chunking - the main CTA */}
+                            <button
+                                onClick={handleAiChunking}
+                                disabled={aiChunking || project.total_files === 0}
+                                className="w-full flex flex-col items-center justify-center gap-1 py-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-amber-500/20 border border-purple-500/30 text-white hover:from-purple-500/30 hover:to-amber-500/30 text-xs font-bold transition-all disabled:opacity-40"
+                            >
+                                <div className="flex items-center gap-2">
+                                    {aiChunking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4 text-purple-400" />}
+                                    <span>AI Analysis & Chunking</span>
+                                </div>
+                                {aiChunking && aiChunkingStep && (
+                                    <span className="text-[10px] text-purple-300/70">{aiChunkingStep}</span>
+                                )}
+                                {!aiChunking && (
+                                    <span className="text-[9px] text-zinc-500 font-normal">Analyzes corpus → suggests best strategy → auto-chunks</span>
+                                )}
+                            </button>
+
+                            <div className="flex items-center gap-2 py-1">
+                                <div className="flex-1 border-t border-white/5" />
+                                <span className="text-[9px] text-zinc-600 uppercase tracking-widest">or manually</span>
+                                <div className="flex-1 border-t border-white/5" />
+                            </div>
+
                             <button
                                 onClick={handleAnalyze}
                                 disabled={analyzing || project.total_files === 0}
                                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs font-bold transition-all disabled:opacity-40"
                             >
                                 {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                                Analyze Corpus
+                                Analyze Only
                             </button>
 
                             <button
@@ -403,7 +472,7 @@ export default function ProjectDetailPage() {
                                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 text-xs font-bold transition-all disabled:opacity-40"
                             >
                                 <Settings2 className="w-3.5 h-3.5" />
-                                Chunk All Files
+                                Manual Chunking
                                 {showChunkConfig ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                             </button>
 
