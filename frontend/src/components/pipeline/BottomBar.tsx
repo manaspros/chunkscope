@@ -7,6 +7,8 @@ import { apiClient } from '@/lib/api'
 import { buildPipelineConfig } from '@/lib/pipeline-nodes'
 import { CodeExportModal } from './CodeExportModal'
 import { CostEstimatePopover } from './CostEstimatePopover'
+import { CostTicker } from './CostTicker'
+import { QuickTestSidebar, QuickTestToggle } from './QuickTestSidebar'
 import {
     Play, Code2, DollarSign, Loader2, CheckCircle2,
     AlertCircle, Undo2, Redo2, Trash2,
@@ -32,6 +34,7 @@ export function BottomBar() {
     const [showExport, setShowExport] = useState(false)
     const [showCost, setShowCost] = useState(false)
     const [executionComplete, setExecutionComplete] = useState(false)
+    const [showQuickTest, setShowQuickTest] = useState(false)
 
     const runPipeline = useCallback(async () => {
         if (nodes.length === 0) return
@@ -132,6 +135,9 @@ export function BottomBar() {
 
     return (
         <>
+            {/* Quick Test Sidebar (collapsible above bottom bar) */}
+            {showQuickTest && <QuickTestSidebar />}
+
             <div className="h-12 border-t border-white/[0.06] bg-neutral-950/80 backdrop-blur-xl flex items-center px-4 gap-2 shrink-0">
                 {/* Left: Quick actions */}
                 <div className="flex items-center gap-1.5">
@@ -168,8 +174,9 @@ export function BottomBar() {
                     </Button>
                 </div>
 
-                {/* Center: Node count info */}
+                {/* Center: Cost ticker + node count */}
                 <div className="flex-1 flex items-center justify-center gap-3">
+                    <CostTicker />
                     <span className="text-[10px] text-neutral-600">
                         {nodes.length} node{nodes.length !== 1 ? 's' : ''} / {edges.length} connection{edges.length !== 1 ? 's' : ''}
                     </span>
@@ -187,6 +194,7 @@ export function BottomBar() {
 
                 {/* Right: Main actions */}
                 <div className="flex items-center gap-2">
+                    <QuickTestToggle onToggle={() => setShowQuickTest(!showQuickTest)} />
                     <Button
                         variant="outline"
                         size="sm"
