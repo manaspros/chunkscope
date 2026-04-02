@@ -437,6 +437,40 @@ Recommendation:
 - HyDE: LLM call per query at retrieval time
 - Query decomposition: LLM call per query
 
+## Research-Backed Benchmark Numbers (Use These for Confidence Scoring)
+
+These numbers come from published research. Use them to validate recommendations.
+
+| Technique | Typical Improvement | Source |
+|-----------|-------------------|--------|
+| Hierarchical chunking vs flat | +8-15% answer quality on structured docs | LlamaIndex evaluation 2024 |
+| Semantic chunking vs fixed-size | +3-7% on BEIR, but 2-3x slower indexing | ChromaDB evaluation 2024 |
+| Hybrid search vs dense-only | +5-12% Recall@10 (largest on domain-specific) | BGE M3 paper, Pinecone benchmarks |
+| Cross-encoder reranking | +10-20% MRR@10 | Nogueira & Cho 2019, Cohere benchmarks |
+| HyDE | +3-12% NDCG@10 in zero-shot, can HURT on factual Qs | Gao et al. 2022 |
+| Query decomposition | +10-25% on multi-hop questions | HotpotQA benchmarks |
+| Parent-child retrieval | +5-15% on long structured documents | LlamaIndex evaluation reports |
+| Graph RAG | +20-70% on global/sensemaking queries, <5% on local | Microsoft GraphRAG paper 2024 |
+| Contextual retrieval (Anthropic) | -49% retrieval failures, -67% with reranking | Anthropic blog Nov 2024 |
+| Optimal chunk size: 1024 tokens | Best general-purpose default | LlamaIndex chunk size eval |
+| Overlap 10-15% | Consistent improvement over 0% overlap | Vectara, Pinecone research |
+
+### Key Research Gap (What ChunkScope Fills)
+No existing tool does corpus-aware automatic RAG configuration recommendation:
+- AutoRAG: brute-force evaluation (needs labeled data, expensive)
+- DSPy: optimizes prompts/demonstrations (not infrastructure choices)
+- RAGAs/ARES: evaluation only (no recommendation)
+- Nobody maps document characteristics to optimal pipeline settings automatically
+
+### Key Papers to Reference
+1. "DSPy: Compiling Declarative LM Calls" - Khattab et al. 2023 (arxiv 2310.03714)
+2. "From Local to Global: Graph RAG" - Edge et al. Microsoft 2024 (arxiv 2404.16130)
+3. "Precise Zero-Shot Dense Retrieval (HyDE)" - Gao et al. 2022 (arxiv 2212.10496)
+4. "RAG for LLMs: A Survey" - Gao et al. 2024 (arxiv 2312.10997)
+5. "MIPRO: Optimizing Multi-Stage LM Programs" - Opsahl-Ong et al. 2024 (arxiv 2406.11695)
+6. "RAPTOR: Recursive Abstractive Processing for Tree-Organized Retrieval" - Sarthi et al. 2024 (arxiv 2401.18059)
+7. "BGE M3-Embedding" - Chen et al. 2024 (arxiv 2402.03216)
+
 ## What ChunkScope Already Has
 - 8 chunking strategies (including heading-based + parent-child via contextual)
 - 19 retrieval strategies (including hybrid, HyDE, query decomposition, metadata filtering)
