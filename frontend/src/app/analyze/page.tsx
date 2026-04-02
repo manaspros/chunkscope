@@ -12,12 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getErrorMessage } from '@/lib/utils';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { FileUploadZone, isZipFile } from '@/components/ui/file-upload-zone';
-import dynamic from 'next/dynamic';
-
-const AnalysisResultOverlay = dynamic(
-    () => import('@/components/analysis/AnalysisResultOverlay').then(mod => ({ default: mod.AnalysisResultOverlay })),
-    { ssr: false }
-);
+import { AnalysisResultOverlay } from '@/components/analysis/AnalysisResultOverlay';
 
 export default function AnalyzePage() {
     const [files, setFiles] = useState<File[]>([]);

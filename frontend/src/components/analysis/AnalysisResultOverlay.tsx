@@ -1,18 +1,16 @@
 "use client"
 
 import React from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { 
-    Activity, 
-    FileText, 
-    Zap, 
-    Shield, 
-    Search, 
-    ArrowRight, 
-    Cpu, 
-    BarChart3, 
+import {
+    Activity,
+    FileText,
+    Zap,
+    Shield,
+    ArrowRight,
+    BarChart3,
     Info,
-    Layout
+    Layout,
+    X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -60,7 +58,6 @@ function displayPercent(val: number | undefined | null): string {
 export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisResultOverlayProps) {
     if (!result) return null
 
-    // Provide safe fallback defaults for missing fields
     const structureDefaults = {
         has_headings: false,
         has_tables: false,
@@ -78,7 +75,7 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
     const density = { ...densityDefaults, ...result.density }
 
     const configDefaults = {
-        chunking_method: "character",
+        chunking_method: "recursive",
         chunk_size: 600,
         overlap: 80,
         embedding_model: "text-embedding-3-small",
@@ -88,18 +85,8 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
     const confidencePercentage = Math.round((result.confidence_score ?? 0) * 100)
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-md"
-        >
-            <motion.div
-                initial={{ scale: 0.9, y: 20, opacity: 0 }}
-                animate={{ scale: 1, y: 0, opacity: 1 }}
-                exit={{ scale: 0.9, y: 20, opacity: 0 }}
-                className="w-full max-w-4xl bg-neutral-900 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh]"
-            >
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="w-full max-w-4xl bg-neutral-900 border border-white/10 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
                 {/* Header */}
                 <div className="p-8 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-orange-500/10 to-transparent">
                     <div className="flex items-center gap-4">
@@ -111,66 +98,54 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                                 Analysis Complete
                             </div>
                             <h2 className="text-2xl font-black text-white tracking-tight">
-                                Forensic Report <span className="text-zinc-500">#{result.document_id ? result.document_id.slice(0, 8) : "---"}</span>
+                                Forensic Report <span className="text-zinc-500">#{result.document_id ? String(result.document_id).slice(0, 8) : "---"}</span>
                             </h2>
                         </div>
                     </div>
-                    <div className="hidden md:flex flex-col items-end">
-                        <div className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Confidence Score</div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-32 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${confidencePercentage}%` }}
-                                    transition={{ duration: 1, ease: "easeOut" }}
-                                    className="h-full bg-orange-500"
-                                />
+                    <div className="flex items-center gap-4">
+                        <div className="hidden md:flex flex-col items-end">
+                            <div className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Confidence Score</div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-32 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-orange-500 transition-all duration-1000 ease-out"
+                                        style={{ width: `${confidencePercentage}%` }}
+                                    />
+                                </div>
+                                <span className="text-sm font-mono font-bold text-orange-400">{confidencePercentage}%</span>
                             </div>
-                            <span className="text-sm font-mono font-bold text-orange-400">{confidencePercentage}%</span>
                         </div>
+                        <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 transition-colors text-zinc-500 hover:text-white">
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+                <div className="flex-1 overflow-y-auto p-8 space-y-8">
                     {/* Top Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <motion.div 
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="p-5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-4"
-                        >
+                        <div className="p-5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-4">
                             <FileText className="w-5 h-5 text-blue-400 shrink-0" />
                             <div>
                                 <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">Doc Type</div>
                                 <div className="text-lg font-bold text-white capitalize">{result.document_type}</div>
                             </div>
-                        </motion.div>
-                        <motion.div 
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="p-5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-4"
-                        >
+                        </div>
+                        <div className="p-5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-4">
                             <Layout className="w-5 h-5 text-purple-400 shrink-0" />
                             <div>
                                 <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">Structural Depth</div>
                                 <div className="text-lg font-bold text-white uppercase">{structure.hierarchy_depth ? `${structure.hierarchy_depth} Layers` : "N/A"}</div>
                             </div>
-                        </motion.div>
-                        <motion.div 
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="p-5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-4"
-                        >
+                        </div>
+                        <div className="p-5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-4">
                             <Zap className="w-5 h-5 text-amber-400 shrink-0" />
                             <div>
                                 <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">Density Score</div>
                                 <div className="text-lg font-bold text-white uppercase">{density.vocabulary_richness ? `${Math.round(density.vocabulary_richness * 100)}% Richness` : "N/A"}</div>
                             </div>
-                        </motion.div>
+                        </div>
                     </div>
 
                     {/* Detailed Analysis */}
@@ -178,7 +153,7 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                         {/* Structure & Density */}
                         <div className="space-y-6">
                             <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
-                                <BarChart3 className="w-4 h-4" /> 
+                                <BarChart3 className="w-4 h-4" />
                                 Forensic Metrics
                             </h3>
                             <div className="grid grid-cols-2 gap-4">
@@ -222,7 +197,7 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                         {/* Strategy Recommendation */}
                         <div className="p-6 rounded-3xl bg-orange-500/5 border border-orange-500/20 space-y-4">
                             <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-orange-400">
-                                <Shield className="w-4 h-4" /> 
+                                <Shield className="w-4 h-4" />
                                 Smart Strategy
                             </h3>
                             <div className="space-y-3">
@@ -240,10 +215,12 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                                         <span className="text-lg font-black text-white">{recommended_config.overlap}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-500/10 border border-orange-500/10 text-[10px] text-orange-200/80 leading-relaxed italic">
-                                    <Info className="w-4 h-4 shrink-0 text-orange-400" />
-                                    "{result.reasoning}"
-                                </div>
+                                {result.reasoning && (
+                                    <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-500/10 border border-orange-500/10 text-[10px] text-orange-200/80 leading-relaxed italic">
+                                        <Info className="w-4 h-4 shrink-0 text-orange-400" />
+                                        &ldquo;{result.reasoning}&rdquo;
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -251,7 +228,7 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
 
                 {/* Footer Actions */}
                 <div className="p-8 border-t border-white/5 flex flex-col md:flex-row items-center gap-4 bg-black/40">
-                    <button 
+                    <button
                         onClick={onClose}
                         className="w-full md:w-auto px-8 py-3 text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] hover:text-white transition-colors"
                     >
@@ -268,7 +245,7 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                         </span>
                     </Button>
                 </div>
-            </motion.div>
-        </motion.div>
+            </div>
+        </div>
     )
 }
