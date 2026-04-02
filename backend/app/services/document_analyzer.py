@@ -182,6 +182,181 @@ class DocumentAnalyzer:
         return headings
 
     # -----------------------------------------------------------------
+    # Content-signal analysis
+    # -----------------------------------------------------------------
+
+    def _compute_content_signals(self, text: str) -> Dict:
+        """
+        Analyze actual document text to compute structural signals used
+        for content-signal-based chunking recommendations.
+
+        Returns dict with keys:
+            heading_density, code_ratio, table_ratio, list_ratio,
+            avg_sentence_length, avg_paragraph_sentences,
+            total_words, total_lines, total_paragraphs
+        """
+        lines = text.splitlines()
+        total_lines = len(lines) or 1  # avoid division by zero
+
+        # --- heading_density: lines starting with # or ALL CAPS ---------
+        heading_lines = 0
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("#"):
+                heading_lines += 1
+            elif len(stripped) >= 3 and stripped == stripped.upper() and re.search(r"[A-Z]", stripped):
+                heading_lines += 1
+        heading_density = heading_lines / total_lines
+
+        # --- code_ratio: lines with code indicators ---------------------
+        code_pattern = re.compile(
+            r"(?:^\s*(?:def |class |function |import |from .+ import |const |let |var |"
+            r"export |return |if |else |for |while |switch |case |try |catch |"
+            r"async |await |=>|#!/))|```|[{}\[\]();]",
+            re.IGNORECASE,
+        )
+        code_lines = sum(1 for l in lines if code_pattern.search(l))
+        code_ratio = code_lines / total_lines
+
+        # --- table_ratio: lines with 2+ pipe characters -----------------
+        table_lines = sum(1 for l in lines if l.count("|") >= 2)
+        table_ratio = table_lines / total_lines
+
+        # --- list_ratio: lines starting with -, *, bullet, or numbered --
+        list_pattern = re.compile(r"^\s*(?:[-*\u2022]|\d+[.)]\s)")
+        list_lines = sum(1 for l in lines if list_pattern.match(l))
+        list_ratio = list_lines / total_lines
+
+        # --- sentence-level metrics -------------------------------------
+        sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()]
+        sentence_lengths = [len(s.split()) for s in sentences]
+        avg_sentence_length = float(np.mean(sentence_lengths)) if sentence_lengths else 0.0
+
+        # --- paragraph-level metrics ------------------------------------
+        paragraphs = [p.strip() for p in re.split(r"\n{2,}", text) if p.strip()]
+        total_paragraphs = len(paragraphs) or 1
+
+        para_sentence_counts = []
+        for para in paragraphs:
+            para_sents = [s.strip() for s in re.split(r"[.!?]+", para) if s.strip()]
+            para_sentence_counts.append(len(para_sents))
+        avg_paragraph_sentences = float(np.mean(para_sentence_counts)) if para_sentence_counts else 0.0
+
+        # --- totals -----------------------------------------------------
+        words = text.split()
+        total_words = len(words)
+
+        return {
+            "heading_density": round(heading_density, 4),
+            "code_ratio": round(code_ratio, 4),
+            "table_ratio": round(table_ratio, 4),
+            "list_ratio": round(list_ratio, 4),
+            "avg_sentence_length": round(avg_sentence_length, 1),
+            "avg_paragraph_sentences": round(avg_paragraph_sentences, 1),
+            "total_words": total_words,
+            "total_lines": total_lines,
+            "total_paragraphs": total_paragraphs,
+        }
+
+    def _recommend_from_signals(self, signals: Dict, doc_type: str) -> Dict:
+        """
+        Priority-ordered decision tree that converts content signals into
+        a concrete chunking recommendation.
+
+        Returns dict with keys:
+            chunking_method, chunk_size, overlap, embedding_model,
+            reasoning, signals_used
+        """
+        embedding_model = "text-embedding-3-small"
+
+        # 1. Heavy code
+        if signals.get("code_ratio", 0) > 0.3:
+            return {
+                "chunking_method": "code_aware",
+                "chunk_size": 400,
+                "overlap": 0,
+                "embedding_model": embedding_model,
+                "reasoning": (
+                    f"High code density ({signals['code_ratio']:.0%}). "
+                    "Using code-aware chunking with zero overlap to preserve function boundaries."
+                ),
+                "signals_used": ["code_ratio"],
+            }
+
+        # 2. Heading-rich prose
+        if signals.get("heading_density", 0) > 0.03 and signals.get("avg_paragraph_sentences", 0) > 2:
+            return {
+                "chunking_method": "heading_based",
+                "chunk_size": 600,
+                "overlap": 75,
+                "embedding_model": embedding_model,
+                "reasoning": (
+                    f"Document has clear heading structure (density {signals['heading_density']:.1%}) "
+                    f"with substantial paragraphs ({signals['avg_paragraph_sentences']:.1f} sentences avg). "
+                    "Heading-based chunking preserves section boundaries."
+                ),
+                "signals_used": ["heading_density", "avg_paragraph_sentences"],
+            }
+
+        # 3. Dense long-sentence prose (legal/academic)
+        if signals.get("avg_sentence_length", 0) > 25:
+            return {
+                "chunking_method": "semantic",
+                "chunk_size": 400,
+                "overlap": 80,
+                "embedding_model": embedding_model,
+                "reasoning": (
+                    f"Dense prose with long sentences ({signals['avg_sentence_length']:.0f} words avg). "
+                    "Semantic chunking with high overlap to avoid splitting complex clauses."
+                ),
+                "signals_used": ["avg_sentence_length"],
+            }
+
+        # 4. Short, fragmented text (chat logs, bullet lists, FAQs)
+        if signals.get("avg_paragraph_sentences", 0) < 3 and signals.get("avg_sentence_length", 0) < 15:
+            return {
+                "chunking_method": "sentence_window",
+                "chunk_size": 256,
+                "overlap": 30,
+                "embedding_model": embedding_model,
+                "reasoning": (
+                    f"Short paragraphs ({signals['avg_paragraph_sentences']:.1f} sentences) "
+                    f"and brief sentences ({signals['avg_sentence_length']:.0f} words). "
+                    "Sentence-window chunking keeps each chunk focused."
+                ),
+                "signals_used": ["avg_paragraph_sentences", "avg_sentence_length"],
+            }
+
+        # 5. Table-heavy content
+        if signals.get("table_ratio", 0) > 0.1:
+            return {
+                "chunking_method": "recursive",
+                "chunk_size": 800,
+                "overlap": 100,
+                "embedding_model": embedding_model,
+                "reasoning": (
+                    f"Significant table content ({signals['table_ratio']:.0%} of lines). "
+                    "Larger recursive chunks to keep table rows together."
+                ),
+                "signals_used": ["table_ratio"],
+            }
+
+        # 6. Fallback
+        return {
+            "chunking_method": "recursive",
+            "chunk_size": 512,
+            "overlap": 50,
+            "embedding_model": embedding_model,
+            "reasoning": (
+                f"General {doc_type} document with no dominant structural signal. "
+                "Using balanced recursive chunking."
+            ),
+            "signals_used": [],
+        }
+
+    # -----------------------------------------------------------------
     # Main analysis entry-point
     # -----------------------------------------------------------------
 
@@ -194,7 +369,8 @@ class DocumentAnalyzer:
 
         Returns:
             dict with keys: document_type, structure, density,
-                          recommended_config, confidence_score, reasoning
+                          recommended_config, confidence_score, reasoning,
+                          content_signals
         """
         import time
         start_time = time.time()
@@ -218,14 +394,10 @@ class DocumentAnalyzer:
                     "vocabulary_richness": 0,
                     "technical_term_density": 0,
                 },
-                "recommended_config": self._generate_config(
-                    "general",
-                    {"has_headings": False, "has_tables": False, "has_code_blocks": False,
-                     "hierarchy_depth": 0, "avg_paragraph_length": 0},
-                    {"avg_sentence_length": 0, "vocabulary_richness": 0, "technical_term_density": 0},
-                ),
+                "recommended_config": self._recommend_from_signals({}, "general"),
                 "confidence_score": 0.5,
                 "reasoning": "ZIP archive detected. Default configuration applied; extract individual files for better analysis.",
+                "content_signals": {},
             }
 
         # Extract content (works for any file type)
@@ -255,24 +427,50 @@ class DocumentAnalyzer:
 
         logger.info(f"Classification took: {time.time() - t1:.2f}s")
 
-        # Analyze structure
+        # Compute content signals from full text
         t2 = time.time()
-        if "_pdf_data" in content:
-            structure = self._analyze_structure(content["_pdf_data"])
-        else:
-            structure = self._analyze_structure_from_text(content)
-        logger.info(f"Structure analysis took: {time.time() - t2:.2f}s")
+        signals = self._compute_content_signals(full_text)
+        logger.info(f"Content signal computation took: {time.time() - t2:.2f}s")
 
-        # Analyze density
+        # Signal-based recommendation
         t3 = time.time()
-        density = self._analyze_density(text_sample)
-        logger.info(f"Density analysis took: {time.time() - t3:.2f}s")
+        config = self._recommend_from_signals(signals, doc_type)
+        logger.info(f"Signal-based recommendation took: {time.time() - t3:.2f}s")
 
-        # Generate recommended configuration
-        config = self._generate_config(doc_type, structure, density)
+        # Build structure dict from signals
+        structure = {
+            "has_headings": signals["heading_density"] > 0,
+            "has_tables": signals["table_ratio"] > 0,
+            "has_code_blocks": signals["code_ratio"] > 0.05,
+            "hierarchy_depth": 0,  # preserved for compat; heading depth not in signals
+            "avg_paragraph_length": (
+                int(signals["total_words"] / signals["total_paragraphs"])
+                if signals["total_paragraphs"] else 0
+            ),
+        }
 
-        # Generate explanation
-        reasoning = self._explain_recommendation(doc_type, structure, density, config)
+        # Enrich hierarchy_depth if content available
+        lines = full_text.splitlines()
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                level = len(stripped) - len(stripped.lstrip("#"))
+                structure["hierarchy_depth"] = max(structure["hierarchy_depth"], level)
+
+        # Build density dict from signals
+        words = re.findall(r'\b\w+\b', text_sample.lower())
+        vocabulary_richness = len(set(words)) / len(words) if words else 0
+        long_words = [w for w in words if len(w) > 12]
+        technical_term_density = len(long_words) / len(words) if words else 0
+
+        density = {
+            "avg_sentence_length": signals["avg_sentence_length"],
+            "vocabulary_richness": round(vocabulary_richness, 2),
+            "technical_term_density": round(technical_term_density, 2),
+        }
+
+        reasoning = config.pop("reasoning", "")
+        signals_used = config.pop("signals_used", [])
 
         result = {
             "document_type": doc_type,
@@ -280,7 +478,8 @@ class DocumentAnalyzer:
             "density": density,
             "recommended_config": config,
             "confidence_score": confidence,
-            "reasoning": reasoning
+            "reasoning": reasoning,
+            "content_signals": signals,
         }
 
         logger.info(f"Analysis complete in {time.time() - start_time:.2f}s: type={doc_type}, confidence={confidence:.2f}")

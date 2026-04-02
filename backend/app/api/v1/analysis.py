@@ -137,7 +137,7 @@ async def analyze_corpus(
     has_code = False
     has_headings = False
     all_confidences: list[float] = []
-    best_config = None
+    per_file_signals: list[dict] = []
 
     for uploaded_file in files:
         try:
@@ -161,7 +161,13 @@ async def analyze_corpus(
 
             result = await document_analyzer.analyze(file_path)
 
-            word_count = result.get("density", {}).get("avg_sentence_length", 0) * 50  # rough estimate
+            signals = result.get("content_signals", {})
+            word_count = signals.get("total_words", 0) or (
+                result.get("density", {}).get("avg_sentence_length", 0) * 50
+            )
+            if signals:
+                per_file_signals.append(signals)
+
             structure = result.get("structure", {})
             if structure.get("has_tables"):
                 has_tables = True
@@ -173,9 +179,6 @@ async def analyze_corpus(
             doc_types.append(result["document_type"])
             all_confidences.append(result.get("confidence_score", 0.5))
             total_words += int(word_count)
-
-            if best_config is None:
-                best_config = result.get("recommended_config", {})
 
             file_results.append(CorpusFileResult(
                 filename=uploaded_file.filename or "unknown",
@@ -199,27 +202,50 @@ async def analyze_corpus(
     dominant_type = type_counts.most_common(1)[0][0] if type_counts else "general"
     avg_confidence = sum(all_confidences) / len(all_confidences) if all_confidences else 0.5
 
-    # Corpus-aware recommendation
     corpus_size = "small" if len(files) < 100 else "medium" if len(files) < 1000 else "large"
 
-    # Adjust config for corpus
-    if best_config is None:
-        best_config = {"chunking_method": "recursive", "chunk_size": 512, "overlap": 50}
+    # Merge content signals across files and derive corpus recommendation
+    if per_file_signals:
+        total_weight = sum(s.get("total_words", 1) for s in per_file_signals) or 1
+        merged_signals = {
+            "heading_density": max(s.get("heading_density", 0) for s in per_file_signals),
+            "code_ratio": max(s.get("code_ratio", 0) for s in per_file_signals),
+            "table_ratio": max(s.get("table_ratio", 0) for s in per_file_signals),
+            "list_ratio": max(s.get("list_ratio", 0) for s in per_file_signals),
+            "avg_sentence_length": round(
+                sum(
+                    s.get("avg_sentence_length", 0) * s.get("total_words", 1)
+                    for s in per_file_signals
+                ) / total_weight,
+                1,
+            ),
+            "avg_paragraph_sentences": round(
+                sum(s.get("avg_paragraph_sentences", 0) for s in per_file_signals)
+                / len(per_file_signals),
+                1,
+            ),
+            "total_words": total_words,
+            "total_lines": sum(s.get("total_lines", 0) for s in per_file_signals),
+            "total_paragraphs": sum(s.get("total_paragraphs", 0) for s in per_file_signals),
+        }
+        best_config = document_analyzer._recommend_from_signals(merged_signals, dominant_type)
+        reasoning_text = best_config.pop("reasoning", "")
+        best_config.pop("signals_used", None)
+    else:
+        merged_signals = {}
+        best_config = {"chunking_method": "recursive", "chunk_size": 512, "overlap": 50,
+                       "embedding_model": "text-embedding-3-small"}
+        reasoning_text = ""
 
     if len(files) > 10:
         best_config["retrieval_strategy"] = "hybrid"
-    if has_code:
-        best_config["chunking_method"] = "code_aware"
-    elif dominant_type == "legal":
-        best_config["chunking_method"] = "semantic"
-    elif has_headings:
-        best_config["chunking_method"] = "heading_based"
 
     reasoning = (
         f"Corpus of {len(files)} files, predominantly {dominant_type} documents. "
         f"{'Contains tables. ' if has_tables else ''}"
         f"{'Contains code blocks. ' if has_code else ''}"
         f"{'Has structured headings. ' if has_headings else ''}"
+        f"{reasoning_text} "
         f"Recommended {best_config.get('chunking_method', 'recursive')} chunking "
         f"with {best_config.get('chunk_size', 512)} token chunks."
     )
