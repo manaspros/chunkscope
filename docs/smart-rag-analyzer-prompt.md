@@ -1,8 +1,60 @@
-# Smart RAG Pipeline Analyzer - Design Prompt
+# Smart RAG Pipeline Analyzer - Design & Implementation Prompt
+
+> **How to use this prompt**: Give this entire document to Claude Code in a new conversation. It will launch research subagents, design the architecture, and implement everything.
+
+## Instructions for Claude
+
+Before implementing ANYTHING, you MUST do deep research first. Launch these subagents IN PARALLEL:
+
+### Research Agent 1: RAG Pipeline Auto-Configuration
+```
+Search the web for: AutoRAG, automatic RAG pipeline optimization, corpus-aware RAG configuration.
+Find: How AutoRAG (autorag-ai/autorag) works, what it analyzes, how it picks strategies.
+Find: DSPy pipeline optimization for RAG. How MIPRO/BootstrapFewShot optimizes retrieval.
+Find: Any research papers on "automatic RAG configuration selection" or "corpus-adaptive retrieval".
+Find: How Unstructured.io's partition() auto-detects document structure.
+Find: Vectara's research on how chunking strategy affects RAG quality (specific percentages).
+Report: concrete algorithms, not vague descriptions. Include paper names and GitHub repos.
+```
+
+### Research Agent 2: Document-Type-Specific RAG Strategies
+```
+Search the web for: best RAG strategies for educational content (textbooks), legal documents, codebases, financial reports.
+Find: Research on hierarchical chunking vs flat chunking performance differences (with numbers).
+Find: When Graph RAG helps vs hurts (what corpus characteristics make it beneficial).
+Find: When HyDE helps vs hurts (what query types benefit).
+Find: Parent-child retrieval benchmarks vs standard retrieval.
+Find: Educational/textbook RAG systems (any published work on NCERT, Khan Academy, Coursera RAG).
+Report: specific benchmark numbers, not opinions. "X% improvement on Y benchmark".
+```
+
+### Research Agent 3: Multi-Strategy RAG Pipelines
+```
+Search the web for: combining multiple RAG techniques, RAG pipeline composition, multi-strategy retrieval.
+Find: How to combine hybrid search + query decomposition + reranking effectively.
+Find: Research on cascade retrieval (coarse-to-fine) performance vs single-stage.
+Find: How Anthropic's contextual retrieval combines with other techniques.
+Find: ColBERT + BM25 + dense vector combination approaches.
+Find: Production RAG architectures from companies (Notion, Stripe, Databricks RAG setups).
+Report: architecture diagrams, technique combinations that work together, and which clash.
+```
+
+After ALL three agents return, synthesize their findings and THEN proceed with the design below. Update the technique selection rules with any new research findings.
+
+---
 
 ## What We Are Building
 
 A system that takes ANY uploaded corpus (files, folders, ZIPs) and automatically determines the exact combination of RAG techniques that will produce the best results for THAT specific data. Not generic recommendations - precise, evidence-based pipeline configuration.
+
+**Project**: ChunkScope at /home/manas/Code/ai/chunkscope
+**Existing code**: Read CLAUDE.md and docs/architecture.md for full context.
+**Key files to read before coding**:
+- `backend/app/services/document_analyzer.py` - current analysis (has _compute_content_signals and _recommend_from_signals)
+- `backend/app/services/decision_engine.py` - current recommendation engine
+- `backend/app/services/strategy_guide.py` - 39 strategy entries with metadata
+- `backend/app/api/v1/projects.py` - project analyze endpoint
+- `frontend/src/app/projects/[id]/page.tsx` - project detail page (the main hub)
 
 ## The Problem
 
@@ -394,8 +446,51 @@ Recommendation:
 - Strategy guide with 39 entries
 
 ## What Needs to Be Built
-1. Expanded fingerprinting (add formula_ratio, cross_ref_ratio, named_entity_density, question_density)
-2. Multi-technique stacking (recommend combinations, not single strategies)
-3. Confidence scoring per recommendation
-4. Pipeline visualization showing the recommended stack
-5. "Why not X?" explanations (why Graph RAG was not recommended, etc.)
+
+### Backend (use subagents for parallel implementation)
+
+#### Subagent 1: Expanded Fingerprinting
+File: `backend/app/services/document_analyzer.py`
+- Add to _compute_content_signals(): formula_ratio, cross_ref_ratio, named_entity_density, question_density, dialogue_ratio, heading_depth, forward_references, back_references, comparison_patterns, causal_chains
+- Keep it zero-LLM - all regex/pattern detection
+- Test with sample texts (create backend/tests/test_fingerprinting.py)
+
+#### Subagent 2: Multi-Technique Recommendation Engine
+File: `backend/app/services/pipeline_recommender.py` (NEW)
+- Implement select_chunking(), select_retrieval(), select_reranking(), select_embedding() as described above
+- Returns a STACK of techniques, not just one per category
+- Each technique has: name, confidence, reasoning, "why not" alternatives
+- Integrate with existing strategy_guide.py for metadata
+- Replace single-strategy output with multi-strategy pipeline config
+
+#### Subagent 3: Frontend Pipeline Visualization
+File: `frontend/src/app/projects/[id]/page.tsx` and new components
+- After AI Analysis, show the recommended pipeline as a visual stack:
+  - Chunking stack (primary + augmentations)
+  - Retrieval stack (base + augmentations)
+  - Reranking stack (stages)
+  - Embedding recommendation with alternatives
+- Each technique card shows: name, confidence bar, reasoning, (i) button
+- "Why not X?" expandable section explaining rejected alternatives
+- "Apply All" button that configures the entire pipeline
+- "Customize" button that lets user override individual techniques
+
+#### Subagent 4: Confidence Scoring + Why-Not Explanations
+File: `backend/app/services/pipeline_recommender.py`
+- Implement confidence scoring formula
+- For each category, generate "why not" for top 2-3 alternatives:
+  - "Why not Graph RAG? Your cross-reference ratio (0.02) is below the 0.05 threshold where entity graphs provide measurable benefit."
+  - "Why not Semantic Chunking? Your heading structure (depth 4) provides natural split points that heading-based chunking leverages better."
+
+### Testing
+- Upload NCERT textbook PDF -> verify it recommends hierarchical + parent-child
+- Upload legal contract -> verify it recommends semantic + graph RAG
+- Upload Python files -> verify it recommends code-aware
+- Upload FAQ document -> verify it recommends sentence window
+- Check that zero LLM tokens are used for fingerprinting + recommendation
+
+### Environment
+- LiteLLM key in .env: LITELLM_API_KEY (for optional LLM explanation only)
+- Backend: FastAPI at port 8000, use uv for packages
+- Frontend: Next.js 14 at port 3000
+- All LLM calls through: `from app.services.llm_service import llm_service`
