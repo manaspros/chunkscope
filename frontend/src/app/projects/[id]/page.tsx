@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { projectsApi } from '@/lib/api';
+import { projectsApi, apiClient } from '@/lib/api';
 import {
     ArrowLeft,
     FileText,
@@ -21,6 +21,9 @@ import {
     Clock,
     BrainCircuit,
     Wand2,
+    Search,
+    MessageSquare,
+    Eye,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { FileUploadZone, isZipFile } from '@/components/ui/file-upload-zone';
@@ -78,6 +81,16 @@ export default function ProjectDetailPage() {
     const [aiChunking, setAiChunking] = useState(false);
     const [aiChunkingStep, setAiChunkingStep] = useState('');
 
+    // Query testing
+    const [queryText, setQueryText] = useState('');
+    const [querying, setQuerying] = useState(false);
+    const [queryResult, setQueryResult] = useState<any>(null);
+    const [retrievalStrategy, setRetrievalStrategy] = useState('hybrid');
+
+    // Chunking progress
+    const [chunkProgress, setChunkProgress] = useState(0);
+    const [chunkProgressText, setChunkProgressText] = useState('');
+
     const fetchProject = useCallback(async () => {
         try {
             setLoading(true);
@@ -93,6 +106,23 @@ export default function ProjectDetailPage() {
     useEffect(() => {
         fetchProject();
     }, [fetchProject]);
+
+    // Load template config from localStorage if available
+    useEffect(() => {
+        try {
+            const templateKey = `project_template_${projectId}`;
+            const stored = localStorage.getItem(templateKey);
+            if (stored) {
+                const config = JSON.parse(stored);
+                if (config.chunking_method) setChunkMethod(config.chunking_method);
+                if (config.chunk_size) setChunkSize(config.chunk_size);
+                if (config.overlap !== undefined) setChunkOverlap(config.overlap);
+                localStorage.removeItem(templateKey);
+            }
+        } catch {
+            // localStorage not available or invalid JSON, skip
+        }
+    }, [projectId]);
 
     const handleFiles = useCallback(async (files: File[]) => {
         if (!files.length) return;
@@ -154,19 +184,35 @@ export default function ProjectDetailPage() {
 
     const handleChunk = async () => {
         setChunking(true);
+        setChunkProgress(10);
+        setChunkProgressText('Preparing files...');
+        const progressInterval = setInterval(() => {
+            setChunkProgress(prev => Math.min(prev + 5, 90));
+            setChunkProgressText(() => {
+                const fileNum = Math.floor(Math.random() * (project?.total_files || 1)) + 1;
+                return `Processing file ${fileNum} of ${project?.total_files}...`;
+            });
+        }, 2000);
         try {
             const result = await projectsApi.chunk(projectId, {
                 chunking_method: chunkMethod,
                 chunk_size: chunkSize,
                 overlap: chunkOverlap,
             });
+            clearInterval(progressInterval);
+            setChunkProgress(100);
+            setChunkProgressText('Complete!');
             toast({ title: `Created ${result.total_chunks} chunks across ${result.files?.length || 0} files` });
             setShowChunkConfig(false);
             fetchProject();
         } catch (error) {
+            clearInterval(progressInterval);
+            setChunkProgress(0);
+            setChunkProgressText('');
             toast({ title: 'Chunking failed', description: getErrorMessage(error), variant: 'destructive' });
         } finally {
             setChunking(false);
+            setTimeout(() => { setChunkProgress(0); setChunkProgressText(''); }, 2000);
         }
     };
 
@@ -183,6 +229,15 @@ export default function ProjectDetailPage() {
 
     const handleAiChunking = async () => {
         setAiChunking(true);
+        setChunkProgress(10);
+        setChunkProgressText('Preparing files...');
+        const progressInterval = setInterval(() => {
+            setChunkProgress(prev => Math.min(prev + 5, 90));
+            setChunkProgressText(() => {
+                const fileNum = Math.floor(Math.random() * (project?.total_files || 1)) + 1;
+                return `Processing file ${fileNum} of ${project?.total_files}...`;
+            });
+        }, 2000);
         try {
             // Step 1: Analyze corpus
             setAiChunkingStep('Analyzing corpus...');
@@ -208,6 +263,10 @@ export default function ProjectDetailPage() {
                 overlap: overlap,
             });
 
+            clearInterval(progressInterval);
+            setChunkProgress(100);
+            setChunkProgressText('Complete!');
+
             toast({
                 title: 'AI Chunking Complete',
                 description: `Analyzed corpus → recommended ${method} chunking → created ${result.total_chunks} chunks across ${result.files?.length || 0} files`,
@@ -215,10 +274,32 @@ export default function ProjectDetailPage() {
 
             fetchProject();
         } catch (error) {
+            clearInterval(progressInterval);
+            setChunkProgress(0);
+            setChunkProgressText('');
             toast({ title: 'AI Chunking failed', description: getErrorMessage(error), variant: 'destructive' });
         } finally {
             setAiChunking(false);
             setAiChunkingStep('');
+            setTimeout(() => { setChunkProgress(0); setChunkProgressText(''); }, 2000);
+        }
+    };
+
+    const handleQuery = async () => {
+        if (!queryText.trim()) return;
+        setQuerying(true);
+        try {
+            const result = await apiClient.post('/api/v1/query/', {
+                query: queryText,
+                document_id: project?.files[0]?.id,
+                top_k: 5,
+                retrieval_method: retrievalStrategy === 'dense' ? 'vector' : retrievalStrategy,
+            }).then(r => r.data);
+            setQueryResult(result);
+        } catch (error) {
+            toast({ title: 'Query failed', description: getErrorMessage(error), variant: 'destructive' });
+        } finally {
+            setQuerying(false);
         }
     };
 
@@ -353,6 +434,17 @@ export default function ProjectDetailPage() {
                             )}
                         </div>
 
+                        {/* Visualizer link for single PDF */}
+                        {project.files.length === 1 && project.files[0].file_type === 'pdf' && project.total_chunks > 0 && (
+                            <Link
+                                href={`/visualizer?docId=${project.files[0].id}`}
+                                className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500/20 text-sm font-bold transition-all"
+                            >
+                                <Eye className="w-4 h-4" />
+                                View Chunks on Document
+                            </Link>
+                        )}
+
                         {/* Analysis Result */}
                         {showAnalysis && analysisResult && (
                             <div className="p-6 rounded-2xl bg-black/30 border border-white/5 space-y-4 animate-in fade-in slide-in-from-bottom-4">
@@ -425,6 +517,74 @@ export default function ProjectDetailPage() {
                                 )}
                             </div>
                         )}
+
+                        {/* Query Testing */}
+                        {project.total_chunks > 0 && (
+                            <div className="p-6 rounded-2xl bg-black/30 border border-white/5 space-y-4">
+                                <h2 className="text-sm font-bold text-zinc-300 flex items-center gap-2">
+                                    <MessageSquare className="w-4 h-4 text-blue-400" />
+                                    Query Testing
+                                </h2>
+
+                                <div className="flex gap-2">
+                                    <input
+                                        value={queryText}
+                                        onChange={(e) => setQueryText(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleQuery()}
+                                        placeholder="Ask a question about your documents..."
+                                        className="flex-1 px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50"
+                                    />
+                                    <select
+                                        value={retrievalStrategy}
+                                        onChange={(e) => setRetrievalStrategy(e.target.value)}
+                                        className="px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 text-xs text-white"
+                                    >
+                                        <option value="dense">Dense</option>
+                                        <option value="hybrid">Hybrid</option>
+                                        <option value="mmr">MMR</option>
+                                    </select>
+                                    <button
+                                        onClick={handleQuery}
+                                        disabled={querying || !queryText.trim()}
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 text-xs font-bold transition-all disabled:opacity-40"
+                                    >
+                                        {querying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                                        Ask
+                                    </button>
+                                </div>
+
+                                {/* Query Results */}
+                                {queryResult && queryResult.results && (
+                                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4">
+                                        <div className="text-[10px] uppercase tracking-widest text-zinc-500">
+                                            {queryResult.results.length} results ({queryResult.retrieval_method || retrievalStrategy})
+                                        </div>
+                                        {queryResult.results.map((chunk: any, i: number) => {
+                                            const score = chunk.score ?? chunk.relevance_score ?? 0;
+                                            const barColor = score > 0.8 ? 'bg-green-500' : score > 0.5 ? 'bg-amber-500' : 'bg-red-500';
+                                            return (
+                                                <div key={i} className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] text-zinc-500 font-mono">Chunk #{chunk.chunk_index ?? i + 1}</span>
+                                                        <span className="text-[10px] text-zinc-400 font-bold">{(score * 100).toFixed(1)}%</span>
+                                                    </div>
+                                                    {/* Relevance bar */}
+                                                    <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+                                                        <div
+                                                            className={`h-full rounded-full ${barColor} transition-all duration-500`}
+                                                            style={{ width: `${Math.max(score * 100, 2)}%` }}
+                                                        />
+                                                    </div>
+                                                    <p className="text-xs text-zinc-300 leading-relaxed line-clamp-4 whitespace-pre-wrap">
+                                                        {chunk.text || chunk.content || ''}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Sidebar */}
@@ -450,6 +610,22 @@ export default function ProjectDetailPage() {
                                     <span className="text-[9px] text-zinc-500 font-normal">Analyzes corpus → suggests best strategy → auto-chunks</span>
                                 )}
                             </button>
+
+                            {/* Chunking Progress Bar */}
+                            {chunkProgress > 0 && (
+                                <div className="space-y-1.5 animate-in fade-in">
+                                    <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                                        <div
+                                            className="h-full rounded-full bg-gradient-to-r from-purple-500 to-amber-500 transition-all duration-700 ease-out"
+                                            style={{ width: `${chunkProgress}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between text-[10px]">
+                                        <span className="text-zinc-500">{chunkProgressText}</span>
+                                        <span className="text-zinc-400 font-mono">{chunkProgress}%</span>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex items-center gap-2 py-1">
                                 <div className="flex-1 border-t border-white/5" />

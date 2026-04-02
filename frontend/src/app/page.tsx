@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useConfigStore } from "@/stores/useConfigStore"
 import { analyzerApi } from "@/lib/api"
-import { ArrowRight, Database, Github, Search, Eye, GitBranch, Layers, Zap, Cpu } from "lucide-react"
+import { ArrowRight, Database, Github, Search, Eye, GitBranch, Layers, Zap, Cpu, FolderPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 
@@ -195,6 +195,13 @@ export default function Home() {
 
                         {/* CTAs */}
                         <div className="flex flex-col sm:flex-row gap-5 justify-center pt-8">
+                            <Link
+                                href="/projects"
+                                className="group relative px-10 py-3.5 bg-gradient-to-b from-orange-400 to-amber-600 text-black rounded-full font-black text-[9px] uppercase tracking-[0.25em] hover:from-orange-300 hover:to-amber-500 active:scale-95 transition-all flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(245,183,0,0.2)] hover:shadow-[0_8px_30px_rgba(245,183,0,0.4)]"
+                            >
+                                <FolderPlus className="w-3.5 h-3.5" />
+                                Create Project
+                            </Link>
                             <Link
                                 href="/visualizer"
                                 className="group relative px-10 py-3.5 bg-white/5 backdrop-blur-md border border-white/10 text-white rounded-full font-black text-[9px] uppercase tracking-[0.25em] hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-3 hover:border-orange-500/40 shadow-lg"

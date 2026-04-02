@@ -11,6 +11,12 @@ import {
     Loader2,
     Archive,
     X,
+    Scale,
+    Code,
+    GraduationCap,
+    TrendingUp,
+    MessageCircle,
+    ArrowLeft,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { useToast } from '@/components/ui/use-toast';
@@ -32,10 +38,21 @@ export default function ProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreate, setShowCreate] = useState(false);
+    const [createStep, setCreateStep] = useState<1 | 2>(1);
+    const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
     const [createName, setCreateName] = useState('');
     const [createDesc, setCreateDesc] = useState('');
     const [creating, setCreating] = useState(false);
     const { toast } = useToast();
+
+    const templates = [
+        { id: 'legal', label: 'Legal Q&A', icon: Scale, color: 'text-amber-400', method: 'semantic', size: 400, overlap: 80 },
+        { id: 'code', label: 'Codebase Search', icon: Code, color: 'text-blue-400', method: 'code_aware', size: 400, overlap: 0 },
+        { id: 'academic', label: 'Academic Research', icon: GraduationCap, color: 'text-purple-400', method: 'heading_based', size: 600, overlap: 75 },
+        { id: 'finance', label: 'Financial Analysis', icon: TrendingUp, color: 'text-green-400', method: 'semantic', size: 400, overlap: 80 },
+        { id: 'support', label: 'Customer Support', icon: MessageCircle, color: 'text-cyan-400', method: 'sentence_window', size: 256, overlap: 30 },
+        { id: 'blank', label: 'Start Blank', icon: Plus, color: 'text-zinc-400', method: null, size: null, overlap: null },
+    ] as const;
 
     const fetchProjects = useCallback(async () => {
         try {
@@ -53,15 +70,44 @@ export default function ProjectsPage() {
         fetchProjects();
     }, [fetchProjects]);
 
+    const openCreateModal = () => {
+        setShowCreate(true);
+        setCreateStep(1);
+        setSelectedTemplate(null);
+        setCreateName('');
+        setCreateDesc('');
+    };
+
+    const handleSelectTemplate = (templateId: string) => {
+        setSelectedTemplate(templateId);
+        setCreateStep(2);
+    };
+
     const handleCreate = async () => {
         if (!createName.trim()) return;
         setCreating(true);
         try {
-            await projectsApi.create({ name: createName.trim(), description: createDesc.trim() || undefined });
+            const result = await projectsApi.create({ name: createName.trim(), description: createDesc.trim() || undefined });
+            // Store template config so project detail page can pre-populate chunk settings
+            if (selectedTemplate && selectedTemplate !== 'blank') {
+                const tpl = templates.find(t => t.id === selectedTemplate);
+                if (tpl && tpl.method) {
+                    try {
+                        localStorage.setItem(`project_template_${result.id}`, JSON.stringify({
+                            chunking_method: tpl.method,
+                            chunk_size: tpl.size,
+                            overlap: tpl.overlap,
+                        }));
+                    } catch {
+                        // localStorage not available, skip
+                    }
+                }
+            }
             toast({ title: 'Project created' });
             setShowCreate(false);
             setCreateName('');
             setCreateDesc('');
+            setSelectedTemplate(null);
             fetchProjects();
         } catch (error) {
             toast({ title: 'Failed to create project', description: getErrorMessage(error), variant: 'destructive' });
@@ -81,7 +127,7 @@ export default function ProjectsPage() {
                         <p className="text-zinc-400 mt-1">Organize files into RAG knowledge bases</p>
                     </div>
                     <button
-                        onClick={() => setShowCreate(true)}
+                        onClick={openCreateModal}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-all hover:scale-105"
                     >
                         <Plus className="w-4 h-4" />
@@ -89,55 +135,97 @@ export default function ProjectsPage() {
                     </button>
                 </div>
 
-                {/* Create Modal */}
+                {/* Create Modal - Two Step Flow */}
                 {showCreate && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                        <div className="w-full max-w-md p-8 rounded-3xl bg-zinc-900 border border-white/10 shadow-2xl">
+                        <div className="w-full max-w-2xl p-8 rounded-3xl bg-zinc-900 border border-white/10 shadow-2xl">
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-black">New Project</h2>
+                                <div className="flex items-center gap-3">
+                                    {createStep === 2 && (
+                                        <button onClick={() => setCreateStep(1)} className="text-zinc-500 hover:text-white transition-colors">
+                                            <ArrowLeft className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    <h2 className="text-xl font-black">
+                                        {createStep === 1 ? 'Pick a Template' : 'Name Your Project'}
+                                    </h2>
+                                </div>
                                 <button onClick={() => setShowCreate(false)} className="text-zinc-500 hover:text-white transition-colors">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">Name</label>
-                                    <input
-                                        value={createName}
-                                        onChange={(e) => setCreateName(e.target.value)}
-                                        placeholder="e.g., Legal Contracts Corpus"
-                                        className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50"
-                                        autoFocus
-                                        onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                                    />
+
+                            {/* Step 1: Template Selection */}
+                            {createStep === 1 && (
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {templates.map((tpl) => {
+                                        const Icon = tpl.icon;
+                                        return (
+                                            <button
+                                                key={tpl.id}
+                                                onClick={() => handleSelectTemplate(tpl.id)}
+                                                className="group flex flex-col items-center gap-3 p-5 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/20 hover:bg-white/[0.06] transition-all text-center"
+                                            >
+                                                <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center ${tpl.color} group-hover:scale-110 transition-transform`}>
+                                                    <Icon className="w-5 h-5" />
+                                                </div>
+                                                <span className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors">{tpl.label}</span>
+                                                {tpl.method && (
+                                                    <span className="text-[9px] text-zinc-600 uppercase tracking-widest">{tpl.method} / {tpl.size}</span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
-                                <div>
-                                    <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">Description (optional)</label>
-                                    <textarea
-                                        value={createDesc}
-                                        onChange={(e) => setCreateDesc(e.target.value)}
-                                        placeholder="What this project contains..."
-                                        rows={3}
-                                        className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50 resize-none"
-                                    />
+                            )}
+
+                            {/* Step 2: Name + Description */}
+                            {createStep === 2 && (
+                                <div className="space-y-4">
+                                    {selectedTemplate && selectedTemplate !== 'blank' && (
+                                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/5 text-xs text-zinc-400">
+                                            Template: <span className="text-white font-bold">{templates.find(t => t.id === selectedTemplate)?.label}</span>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">Name</label>
+                                        <input
+                                            value={createName}
+                                            onChange={(e) => setCreateName(e.target.value)}
+                                            placeholder="e.g., Legal Contracts Corpus"
+                                            className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50"
+                                            autoFocus
+                                            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">Description (optional)</label>
+                                        <textarea
+                                            value={createDesc}
+                                            onChange={(e) => setCreateDesc(e.target.value)}
+                                            placeholder="What this project contains..."
+                                            rows={3}
+                                            className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50 resize-none"
+                                        />
+                                    </div>
+                                    <div className="flex gap-3 mt-6">
+                                        <button
+                                            onClick={() => setCreateStep(1)}
+                                            className="flex-1 py-2.5 rounded-xl text-zinc-400 text-sm font-medium hover:text-white transition-colors"
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            onClick={handleCreate}
+                                            disabled={!createName.trim() || creating}
+                                            className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                            Create
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex gap-3 mt-6">
-                                <button
-                                    onClick={() => setShowCreate(false)}
-                                    className="flex-1 py-2.5 rounded-xl text-zinc-400 text-sm font-medium hover:text-white transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleCreate}
-                                    disabled={!createName.trim() || creating}
-                                    className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                                    Create
-                                </button>
-                            </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -156,7 +244,7 @@ export default function ProjectsPage() {
                         <h3 className="text-lg font-bold text-zinc-400 mb-1">No projects yet</h3>
                         <p className="text-sm text-zinc-600 mb-6">Create a project to start building your RAG knowledge base</p>
                         <button
-                            onClick={() => setShowCreate(true)}
+                            onClick={openCreateModal}
                             className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-all"
                         >
                             <Plus className="w-4 h-4" />
