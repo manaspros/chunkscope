@@ -7,7 +7,6 @@ from enum import Enum as PyEnum
 from typing import Any, Optional
 from uuid import UUID
 
-from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -18,9 +17,28 @@ from sqlalchemy import (
     String,
     Text,
     Uuid,
+    JSON,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+# Use JSON instead of JSONB for SQLite compatibility
+JSONB = JSON
+
+# Detect if we're using PostgreSQL or SQLite
+from app.config import settings as _settings
+_is_postgres = "postgresql" in _settings.database_url or "postgres" in _settings.database_url
+
+if _is_postgres:
+    try:
+        from pgvector.sqlalchemy import Vector as _Vector
+        Vector = _Vector
+    except ImportError:
+        Vector = None  # type: ignore
+    from sqlalchemy.dialects.postgresql import TSVECTOR as _TSVECTOR
+    TSVECTOR = _TSVECTOR
+else:
+    Vector = None  # type: ignore
+    TSVECTOR = None  # type: ignore
 
 from .base import Base, TimestampMixin
 
@@ -98,14 +116,14 @@ class Pipeline(Base, TimestampMixin):
     )
 
     # JSONB for flexible node/edge storage
-    nodes: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
-    edges: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    nodes: Mapped[list] = mapped_column(JSONB, default=list)
+    edges: Mapped[list] = mapped_column(JSONB, default=list)
 
     # Link to preset if created from one
     preset_id: Mapped[Optional[UUID]] = mapped_column(Uuid, ForeignKey("presets.id"), nullable=True)
 
     # Pipeline-level settings
-    settings: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    settings: Mapped[dict] = mapped_column(JSONB, default=dict)
 
     # Relationships
     versions: Mapped[list["PipelineVersion"]] = relationship(back_populates="pipeline", cascade="all, delete-orphan")
@@ -154,7 +172,7 @@ class Document(Base, TimestampMixin):
     file_size_bytes: Mapped[Optional[int]] = mapped_column(BigInteger)
 
     # JSONB for variable metadata (page_count, author, etc.)
-    doc_metadata: Mapped[dict] = mapped_column('metadata', JSONB, default=dict, server_default="{}")
+    doc_metadata: Mapped[dict] = mapped_column('metadata', JSONB, default=dict)
 
     # Extracted text (populated after processing)
     extracted_text: Mapped[Optional[str]] = mapped_column(Text)
@@ -186,7 +204,8 @@ class Chunk(Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Vector embedding (1536 for OpenAI text-embedding-3-small/large)
-    embedding = mapped_column(Vector(1536))
+    # Uses pgvector Vector type on PostgreSQL, nullable Text on SQLite
+    embedding = mapped_column(Vector(1536) if Vector else Text, nullable=True)
 
     # Chunking configuration
     chunking_method: Mapped[Optional[ChunkingMethod]] = mapped_column(
@@ -196,7 +215,7 @@ class Chunk(Base):
     chunk_overlap: Mapped[Optional[int]] = mapped_column(Integer)
 
     # JSONB for variable metadata
-    chunk_metadata: Mapped[dict] = mapped_column('metadata', JSONB, default=dict, server_default="{}")
+    chunk_metadata: Mapped[dict] = mapped_column('metadata', JSONB, default=dict)
 
     # Token count for cost estimation
     token_count: Mapped[Optional[int]] = mapped_column(Integer)
@@ -208,8 +227,8 @@ class Chunk(Base):
         index=True
     )
 
-    # Full-text search vector
-    tsv = mapped_column(TSVECTOR)
+    # Full-text search vector (PostgreSQL only, nullable for SQLite)
+    tsv = mapped_column(TSVECTOR if TSVECTOR else Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
@@ -236,7 +255,7 @@ class TestDataset(Base, TimestampMixin):
     description: Mapped[Optional[str]] = mapped_column(Text)
 
     # Array of Q&A pairs
-    questions: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    questions: Mapped[list] = mapped_column(JSONB, default=list)
 
     # Relationships
     evaluations: Mapped[list["Evaluation"]] = relationship(back_populates="test_dataset")
@@ -280,7 +299,7 @@ class Evaluation(Base):
     )
 
     # Aggregate scores
-    aggregate_scores: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    aggregate_scores: Mapped[dict] = mapped_column(JSONB, default=dict)
 
     # Execution metrics
     total_queries: Mapped[int] = mapped_column(Integer, default=0)
@@ -321,13 +340,13 @@ class EvaluationResult(Base):
     expected_answer: Mapped[Optional[str]] = mapped_column(Text)
 
     # Retrieved chunks (array of chunk IDs)
-    retrieved_chunk_ids: Mapped[list] = mapped_column(ARRAY(Uuid), default=list)
+    retrieved_chunk_ids: Mapped[list] = mapped_column(JSON, default=list)
 
     # Generated response
     generated_answer: Mapped[Optional[str]] = mapped_column(Text)
 
     # LLM-as-Judge scores
-    scores: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    scores: Mapped[dict] = mapped_column(JSONB, default=dict)
 
     # Performance metrics
     latency_ms: Mapped[Optional[int]] = mapped_column(Integer)
@@ -364,7 +383,7 @@ class ExecutionLog(Base):
     message: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Additional context
-    details: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    details: Mapped[dict] = mapped_column(JSONB, default=dict)
 
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, index=True)
 

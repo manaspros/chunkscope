@@ -54,3 +54,4 @@ uploads/*.txt
 
 # Logs
 *.log
+test.db
