@@ -1,13 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { analyzerApi } from '@/lib/api';
+import { analyzerApi, documentsApi } from '@/lib/api';
 import {
-    Upload,
-    FileText,
-    CheckCircle,
-    Loader2,
     ArrowRight,
     Sparkles
 } from 'lucide-react';
@@ -15,6 +11,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/components/ui/use-toast';
 import { getErrorMessage } from '@/lib/utils';
 import { useConfigStore } from '@/stores/useConfigStore';
+import { FileUploadZone, isZipFile } from '@/components/ui/file-upload-zone';
 import dynamic from 'next/dynamic';
 
 const AnalysisResultOverlay = dynamic(
@@ -22,39 +19,45 @@ const AnalysisResultOverlay = dynamic(
     { ssr: false }
 );
 
-interface AnalysisResult {
-    document_id: string | null;
-    chunks_count: number;
-    preview_chunks: any[];
-}
-
 export default function AnalyzePage() {
-    const [file, setFile] = useState<File | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<any | null>(null);
     const setSelectedDocId = useConfigStore((state) => state.setSelectedDocId);
     const router = useRouter();
     const { toast } = useToast();
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
-        }
-    };
+    const handleFiles = useCallback((incoming: File[]) => {
+        setFiles(incoming);
+    }, []);
 
     const handleAnalyze = async () => {
-        if (!file) return;
+        if (files.length === 0) return;
 
         setIsUploading(true);
         try {
-            // 1. Analyze Document
-            const result = await analyzerApi.analyzeDocument(file);
-            setAnalysisResult(result);
-            setSelectedDocId(result.document_id);
+            // Analyze each file; for ZIPs, upload via the zip endpoint first
+            for (const file of files) {
+                let result;
+
+                if (isZipFile(file)) {
+                    // Upload zip first, then analyze
+                    await documentsApi.uploadZip(file);
+                    result = await analyzerApi.analyzeDocument(file);
+                } else {
+                    result = await analyzerApi.analyzeDocument(file);
+                }
+
+                // Use the last result for the overlay
+                setAnalysisResult(result);
+                if (result.document_id) {
+                    setSelectedDocId(result.document_id);
+                }
+            }
 
             toast({
                 title: "Scan Complete",
-                description: "Forensic report generated.",
+                description: `Forensic report generated for ${files.length} file${files.length > 1 ? 's' : ''}.`,
             });
         } catch (error) {
             console.error(error);
@@ -102,42 +105,23 @@ export default function AnalyzePage() {
                                 Chunk Analyzer
                             </h1>
                             <p className="text-xl text-zinc-400 font-light max-w-2xl mx-auto">
-                                Upload your PDF to inspect how different chunking strategies affect semantic integrity.
+                                Upload any document to inspect how different chunking strategies affect semantic integrity.
                             </p>
                         </div>
 
                         {/* Upload Card */}
                         <div className="p-10 rounded-[2.5rem] bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl">
-                            <div className="border-2 border-dashed border-white/10 rounded-3xl p-12 text-center transition-all hover:border-gold/50 hover:bg-white/5 group cursor-pointer relative">
-                                <input
-                                    type="file"
-                                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                    onChange={handleFileChange}
-                                    accept=".pdf"
-                                />
-
-                                <div className="flex flex-col items-center gap-6 pointer-events-none">
-                                    <div className="w-20 h-20 rounded-2xl bg-zinc-900/50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-white/5">
-                                        {file ? (
-                                            <FileText className="w-10 h-10 text-gold" />
-                                        ) : (
-                                            <Upload className="w-10 h-10 text-zinc-500 group-hover:text-gold transition-colors" />
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <h3 className="text-xl font-bold text-white">
-                                            {file ? file.name : "Drop PDF here or click to browse"}
-                                        </h3>
-                                        <p className="text-zinc-500 text-sm">
-                                            {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "Support for standard PDF documents"}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                            <FileUploadZone
+                                onFiles={handleFiles}
+                                multiple
+                                allowFolder
+                                helpText="Drop any document here or click to browse"
+                                supportedText="PDF, TXT, MD, DOCX, CSV, JSON, XML, YAML, HTML, Python, JS, TS, ZIP, and more"
+                                uploading={isUploading}
+                            />
 
                             {/* Actions */}
-                            {file && (
+                            {files.length > 0 && (
                                 <div className="mt-8 flex justify-center animate-in fade-in slide-in-from-bottom-4">
                                     <button
                                         onClick={handleAnalyze}

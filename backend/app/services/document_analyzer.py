@@ -1,10 +1,11 @@
 """
 Document Analyzer Service
-Analyzes uploaded PDFs and recommends optimal RAG configurations
+Analyzes uploaded documents and recommends optimal RAG configurations.
+Supports PDFs, plain text, code, markdown, DOCX, and more.
 """
 import re
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 import numpy as np
 from transformers import pipeline
 
@@ -12,6 +13,17 @@ from app.core.logging import get_logger
 from app.services.pdf_processor import pdf_processor
 
 logger = get_logger(__name__)
+
+# Extensions that can be read as plain UTF-8 text
+_TEXT_EXTENSIONS = {
+    ".txt", ".md", ".markdown", ".py", ".js", ".ts", ".tsx", ".jsx",
+    ".json", ".csv", ".html", ".htm", ".xml", ".yaml", ".yml",
+    ".java", ".cpp", ".c", ".h", ".go", ".rs", ".rb", ".php",
+    ".swift", ".kt", ".scala", ".r", ".sql", ".sh", ".bash", ".zsh",
+    ".ps1", ".css", ".scss", ".less", ".toml", ".ini", ".cfg",
+    ".env", ".properties", ".rst", ".tex", ".rtf", ".log",
+    ".code", ".config",
+}
 
 
 class DocumentAnalyzer:
@@ -53,34 +65,185 @@ class DocumentAnalyzer:
                     logger.error("All classification models failed to load")
                     raise
     
+    # -----------------------------------------------------------------
+    # Content extraction (handles all file types)
+    # -----------------------------------------------------------------
+
+    def _extract_content(self, file_path: str) -> Dict:
+        """
+        Extract content from *any* supported file type.
+
+        Returns:
+            dict with keys: full_text, page_count, paragraphs, headings
+        """
+        path = Path(file_path)
+        ext = path.suffix.lower()
+
+        # --- PDF ---
+        if ext == ".pdf":
+            return self._extract_content_pdf(file_path)
+
+        # --- ZIP (skip real analysis) ---
+        if ext == ".zip":
+            return {
+                "full_text": "",
+                "page_count": 0,
+                "paragraphs": [],
+                "headings": [],
+            }
+
+        # --- DOCX ---
+        if ext == ".docx":
+            return self._extract_content_docx(file_path)
+
+        # --- Everything else: read as UTF-8 text ---
+        return self._extract_content_text(file_path)
+
+    def _extract_content_pdf(self, file_path: str) -> Dict:
+        """Extract via pdf_processor and normalise into the common dict."""
+        pdf_data = pdf_processor.extract_document(file_path)
+
+        full_text = ""
+        for page in pdf_data.pages:
+            for block in page.blocks:
+                for line in block.lines:
+                    for span in line.spans:
+                        full_text += span.text + " "
+
+        paragraphs = [p.strip() for p in re.split(r"\n{2,}", full_text) if p.strip()]
+
+        headings: List[str] = []
+        for page in pdf_data.pages:
+            for h in page.headings:
+                headings.append(h.text)
+
+        return {
+            "full_text": full_text,
+            "page_count": pdf_data.page_count,
+            "paragraphs": paragraphs,
+            "headings": headings,
+            "_pdf_data": pdf_data,  # keep for legacy callers
+        }
+
+    def _extract_content_docx(self, file_path: str) -> Dict:
+        """Extract text from DOCX, with fallback to raw read."""
+        text = ""
+        try:
+            from docx import Document as DocxDocument
+            doc = DocxDocument(file_path)
+            text = "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
+        except ImportError:
+            logger.warning("python-docx not installed, reading raw bytes as text")
+            text = Path(file_path).read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            text = Path(file_path).read_text(encoding="utf-8", errors="replace")
+
+        paragraphs = [p.strip() for p in re.split(r"\n{2,}", text) if p.strip()]
+        headings = self._detect_headings_from_text(text)
+
+        return {
+            "full_text": text,
+            "page_count": 1,
+            "paragraphs": paragraphs,
+            "headings": headings,
+        }
+
+    def _extract_content_text(self, file_path: str) -> Dict:
+        """Read any text-based file as UTF-8."""
+        try:
+            text = Path(file_path).read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            text = ""
+
+        paragraphs = [p.strip() for p in re.split(r"\n{2,}", text) if p.strip()]
+        headings = self._detect_headings_from_text(text)
+
+        return {
+            "full_text": text,
+            "page_count": 1,
+            "paragraphs": paragraphs,
+            "headings": headings,
+        }
+
+    @staticmethod
+    def _detect_headings_from_text(text: str) -> List[str]:
+        """Detect heading-like lines from plain text / markdown."""
+        headings: List[str] = []
+        for line in text.splitlines():
+            stripped = line.strip()
+            if not stripped:
+                continue
+            # Markdown headings
+            if stripped.startswith("#"):
+                headings.append(stripped.lstrip("# ").strip())
+            # ALL-CAPS lines (at least 3 chars, not just symbols)
+            elif len(stripped) >= 3 and stripped == stripped.upper() and re.search(r"[A-Z]", stripped):
+                headings.append(stripped)
+        return headings
+
+    # -----------------------------------------------------------------
+    # Main analysis entry-point
+    # -----------------------------------------------------------------
+
     async def analyze(self, document_path: str) -> Dict:
         """
         Analyze a document and recommend optimal RAG configuration.
-        
+
         Args:
-            document_path: Path to the PDF document
-            
+            document_path: Path to the document (any supported type)
+
         Returns:
-            dict with keys: document_type, structure, density, 
+            dict with keys: document_type, structure, density,
                           recommended_config, confidence_score, reasoning
         """
         import time
         start_time = time.time()
         logger.info(f"Analyzing document: {document_path}")
-        
-        # Extract PDF content
+
+        ext = Path(document_path).suffix.lower()
+
+        # --- ZIP shortcut: skip heavy analysis ---
+        if ext == ".zip":
+            return {
+                "document_type": "general",
+                "structure": {
+                    "has_headings": False,
+                    "has_tables": False,
+                    "has_code_blocks": False,
+                    "hierarchy_depth": 0,
+                    "avg_paragraph_length": 0,
+                },
+                "density": {
+                    "avg_sentence_length": 0,
+                    "vocabulary_richness": 0,
+                    "technical_term_density": 0,
+                },
+                "recommended_config": self._generate_config(
+                    "general",
+                    {"has_headings": False, "has_tables": False, "has_code_blocks": False,
+                     "hierarchy_depth": 0, "avg_paragraph_length": 0},
+                    {"avg_sentence_length": 0, "vocabulary_richness": 0, "technical_term_density": 0},
+                ),
+                "confidence_score": 0.5,
+                "reasoning": "ZIP archive detected. Default configuration applied; extract individual files for better analysis.",
+            }
+
+        # Extract content (works for any file type)
         t0 = time.time()
-        pdf_data = pdf_processor.extract_document(document_path)
-        logger.info(f"PDF extraction complete in {time.time() - t0:.2f}s")
-        logger.info(f"PDF extraction took: {time.time() - t0:.2f}s")
-        
+        content = self._extract_content(document_path)
+        logger.info(f"Content extraction complete in {time.time() - t0:.2f}s")
+
+        full_text = content["full_text"]
+        if not full_text.strip():
+            logger.warning("Empty document text after extraction")
+
         # Get text sample for classification
-        text_sample = self._extract_text_sample(pdf_data)
-        
+        text_sample = full_text[:2000]
+
         # Use fast keyword-based classification first
         t1 = time.time()
         fast_result = self._quick_classify(text_sample)
-        
+
         if fast_result:
             doc_type, confidence = fast_result
             logger.info(f"Quick classification: {doc_type} (confidence: {confidence}) in {time.time() - t1:.3f}s")
@@ -89,25 +252,28 @@ class DocumentAnalyzer:
             logger.info("Keyword classification inconclusive. Falling back to ML...")
             doc_type, confidence = self._classify_document(text_sample)
             logger.info(f"ML classification: {doc_type} (confidence: {confidence}) in {time.time() - t1:.3f}s")
-            
+
         logger.info(f"Classification took: {time.time() - t1:.2f}s")
-        
+
         # Analyze structure
         t2 = time.time()
-        structure = self._analyze_structure(pdf_data)
+        if "_pdf_data" in content:
+            structure = self._analyze_structure(content["_pdf_data"])
+        else:
+            structure = self._analyze_structure_from_text(content)
         logger.info(f"Structure analysis took: {time.time() - t2:.2f}s")
-        
+
         # Analyze density
         t3 = time.time()
         density = self._analyze_density(text_sample)
         logger.info(f"Density analysis took: {time.time() - t3:.2f}s")
-        
+
         # Generate recommended configuration
         config = self._generate_config(doc_type, structure, density)
-        
+
         # Generate explanation
         reasoning = self._explain_recommendation(doc_type, structure, density, config)
-        
+
         result = {
             "document_type": doc_type,
             "structure": structure,
@@ -116,7 +282,7 @@ class DocumentAnalyzer:
             "confidence_score": confidence,
             "reasoning": reasoning
         }
-        
+
         logger.info(f"Analysis complete in {time.time() - start_time:.2f}s: type={doc_type}, confidence={confidence:.2f}")
         return result
     
@@ -151,17 +317,48 @@ class DocumentAnalyzer:
         
         return None
     
-    def _extract_text_sample(self, pdf_data) -> str:
-        """Extract first 2000 characters for efficient classification."""
-        text = ""
-        for page in pdf_data.pages[:3]:  # First 3 pages
-            for block in page.blocks:
-                for line in block.lines:
-                    for span in line.spans:
-                        text += span.text + " "
-                        if len(text) >= 2000:
-                            return text[:2000]
-        return text
+    def _analyze_structure_from_text(self, content: Dict) -> Dict:
+        """
+        Analyze document structure from plain-text content dict
+        (non-PDF path).
+        """
+        full_text = content.get("full_text", "")
+        paragraphs = content.get("paragraphs", [])
+        headings = content.get("headings", [])
+
+        has_headings = len(headings) > 0
+
+        # Detect tables: pipe-delimited rows or CSV-like structure
+        lines = full_text.splitlines()
+        pipe_lines = sum(1 for l in lines if l.count("|") >= 2)
+        comma_lines = sum(1 for l in lines if l.count(",") >= 3)
+        has_tables = pipe_lines >= 2 or comma_lines >= 5
+
+        # Detect code
+        code_indicators = ["```", "def ", "function ", "class ", "import ",
+                           "const ", "var ", "let ", "=> {", "};", "#!/"]
+        has_code = any(ind in full_text for ind in code_indicators)
+
+        # Hierarchy depth from markdown heading levels
+        hierarchy_depth = 0
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                level = len(stripped) - len(stripped.lstrip("#"))
+                hierarchy_depth = max(hierarchy_depth, level)
+
+        # Average paragraph length
+        avg_paragraph_length = (
+            int(np.mean([len(p) for p in paragraphs])) if paragraphs else 0
+        )
+
+        return {
+            "has_headings": has_headings,
+            "has_tables": has_tables,
+            "has_code_blocks": has_code,
+            "hierarchy_depth": hierarchy_depth,
+            "avg_paragraph_length": avg_paragraph_length,
+        }
     
     def _classify_document(self, text_sample: str) -> tuple[str, float]:
         """

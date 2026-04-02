@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
-import { Upload, FileText, Sparkles, X, AlertTriangle } from "lucide-react"
+import { Upload, FileText, Sparkles, X, AlertTriangle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useSuggestionStore } from "@/stores/useSuggestionStore"
 import { isBinaryFile, isZipFile } from "@/components/ui/file-upload-zone"
+import { analyzerApi, documentsApi } from "@/lib/api"
 
 const BINARY_EXTENSIONS = new Set([
     "pdf", "docx", "doc", "xlsx", "xls", "pptx", "ppt",
@@ -32,6 +33,7 @@ export function DocumentInput() {
     const [isDragging, setIsDragging] = useState(false)
     const [fileName, setFileName] = useState<string | null>(null)
     const [binaryWarning, setBinaryWarning] = useState<string | null>(null)
+    const [binaryUploading, setBinaryUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const isLoading = isProfilingLoading || isRecommendationLoading
@@ -40,21 +42,37 @@ export function DocumentInput() {
         async (file: File) => {
             setFileName(file.name)
             setBinaryWarning(null)
+            setBinaryUploading(false)
 
-            // Binary file detection
+            // Binary file detection (PDF, DOCX, etc.) - upload to server for processing
             if (isBinaryFile(file) && !isZipFile(file)) {
-                setBinaryWarning(
-                    "Upload this file on the Pipeline page for full processing. Text preview not available for binary files."
-                )
+                setBinaryWarning("Uploading to server for processing...")
+                setBinaryUploading(true)
+                try {
+                    const result = await analyzerApi.analyzeDocument(file)
+                    // If the server returned reasoning text, use it as a summary
+                    const summary = result.reasoning || `Analyzed ${file.name}: ${result.document_type} document`
+                    setDocumentText(summary)
+                    setBinaryWarning(null)
+                } catch {
+                    setBinaryWarning(
+                        "Server processing failed. Try uploading on the Pipeline page instead."
+                    )
+                } finally {
+                    setBinaryUploading(false)
+                }
                 return
             }
 
-            // ZIP file handling: try to extract first text file
+            // ZIP file handling: upload to server, then try extracting a text preview
             if (isZipFile(file)) {
+                setBinaryWarning("Uploading ZIP to server for processing...")
+                setBinaryUploading(true)
                 try {
+                    await documentsApi.uploadZip(file)
+                    // Also try extracting first text file client-side for preview
                     const JSZip = (await import("jszip")).default
                     const zip = await JSZip.loadAsync(file)
-                    // Find the first text-like file
                     for (const [path, entry] of Object.entries(zip.files)) {
                         if (entry.dir) continue
                         const ext = getExt(path)
@@ -63,18 +81,19 @@ export function DocumentInput() {
                             if (text) {
                                 setDocumentText(text)
                                 setFileName(`${file.name} > ${path}`)
+                                setBinaryWarning(null)
+                                setBinaryUploading(false)
                                 return
                             }
                         }
                     }
-                    // No text files found
-                    setBinaryWarning(
-                        "No text files found in ZIP archive. Upload on the Pipeline page for full processing."
-                    )
+                    setBinaryWarning("ZIP uploaded. No text files found for preview.")
                 } catch {
                     setBinaryWarning(
-                        "Could not read ZIP archive. Upload on the Pipeline page for full processing."
+                        "Could not process ZIP archive. Upload on the Pipeline page for full processing."
                     )
+                } finally {
+                    setBinaryUploading(false)
                 }
                 return
             }
@@ -179,7 +198,11 @@ export function DocumentInput() {
                         </div>
                     ) : binaryWarning ? (
                         <div className="flex flex-col items-center justify-center py-8 px-4 gap-3">
-                            <AlertTriangle className="w-8 h-8 text-amber-500" />
+                            {binaryUploading ? (
+                                <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                            ) : (
+                                <AlertTriangle className="w-8 h-8 text-amber-500" />
+                            )}
                             {fileName && (
                                 <div className="flex items-center gap-2 text-xs text-zinc-400">
                                     <FileText className="w-3.5 h-3.5" />

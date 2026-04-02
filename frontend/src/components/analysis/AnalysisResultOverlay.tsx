@@ -47,10 +47,45 @@ interface AnalysisResultOverlayProps {
     onConfirm: (config: any) => void
 }
 
+function displayValue(val: number | undefined | null, suffix: string): string {
+    if (val === undefined || val === null || val === 0) return "N/A"
+    return `${val} ${suffix}`
+}
+
+function displayPercent(val: number | undefined | null): string {
+    if (val === undefined || val === null || val === 0) return "N/A"
+    return `${Math.round(val * 100)}%`
+}
+
 export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisResultOverlayProps) {
     if (!result) return null
 
-    const confidencePercentage = Math.round(result.confidence_score * 100)
+    // Provide safe fallback defaults for missing fields
+    const structureDefaults = {
+        has_headings: false,
+        has_tables: false,
+        has_code_blocks: false,
+        hierarchy_depth: 0,
+        avg_paragraph_length: 0,
+    }
+    const structure = { ...structureDefaults, ...result.structure }
+
+    const densityDefaults = {
+        avg_sentence_length: 0,
+        vocabulary_richness: 0,
+        technical_term_density: 0,
+    }
+    const density = { ...densityDefaults, ...result.density }
+
+    const configDefaults = {
+        chunking_method: "character",
+        chunk_size: 600,
+        overlap: 80,
+        embedding_model: "text-embedding-3-small",
+    }
+    const recommended_config = { ...configDefaults, ...result.recommended_config }
+
+    const confidencePercentage = Math.round((result.confidence_score ?? 0) * 100)
 
     return (
         <motion.div
@@ -76,7 +111,7 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                                 Analysis Complete
                             </div>
                             <h2 className="text-2xl font-black text-white tracking-tight">
-                                Forensic Report <span className="text-zinc-500">#{result.document_id.slice(0, 8)}</span>
+                                Forensic Report <span className="text-zinc-500">#{result.document_id ? result.document_id.slice(0, 8) : "---"}</span>
                             </h2>
                         </div>
                     </div>
@@ -121,7 +156,7 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                             <Layout className="w-5 h-5 text-purple-400 shrink-0" />
                             <div>
                                 <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">Structural Depth</div>
-                                <div className="text-lg font-bold text-white uppercase">{result.structure.hierarchy_depth} Layers</div>
+                                <div className="text-lg font-bold text-white uppercase">{structure.hierarchy_depth ? `${structure.hierarchy_depth} Layers` : "N/A"}</div>
                             </div>
                         </motion.div>
                         <motion.div 
@@ -133,7 +168,7 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                             <Zap className="w-5 h-5 text-amber-400 shrink-0" />
                             <div>
                                 <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1">Density Score</div>
-                                <div className="text-lg font-bold text-white uppercase">{Math.round(result.density.vocabulary_richness * 100)}% Richness</div>
+                                <div className="text-lg font-bold text-white uppercase">{density.vocabulary_richness ? `${Math.round(density.vocabulary_richness * 100)}% Richness` : "N/A"}</div>
                             </div>
                         </motion.div>
                     </div>
@@ -150,34 +185,34 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between text-[11px]">
                                         <span className="text-zinc-500">Avg Sentence</span>
-                                        <span className="text-white font-mono">{result.density.avg_sentence_length} words</span>
+                                        <span className="text-white font-mono">{displayValue(density.avg_sentence_length, "words")}</span>
                                     </div>
                                     <div className="flex items-center justify-between text-[11px]">
                                         <span className="text-zinc-500">Tech Density</span>
-                                        <span className="text-white font-mono">{Math.round(result.density.technical_term_density * 100)}%</span>
+                                        <span className="text-white font-mono">{displayPercent(density.technical_term_density)}</span>
                                     </div>
                                     <div className="flex items-center justify-between text-[11px]">
                                         <span className="text-zinc-500">Avg Paragraph</span>
-                                        <span className="text-white font-mono">{result.structure.avg_paragraph_length} chars</span>
+                                        <span className="text-white font-mono">{displayValue(structure.avg_paragraph_length, "chars")}</span>
                                     </div>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between text-[11px]">
                                         <span className="text-zinc-500">Has Tables</span>
-                                        <span className={`font-mono ${result.structure.has_tables ? 'text-green-400' : 'text-zinc-700'}`}>
-                                            {result.structure.has_tables ? 'YES' : 'NO'}
+                                        <span className={`font-mono ${structure.has_tables ? 'text-green-400' : 'text-zinc-700'}`}>
+                                            {structure.has_tables ? 'YES' : 'NO'}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between text-[11px]">
                                         <span className="text-zinc-500">Has Code</span>
-                                        <span className={`font-mono ${result.structure.has_code_blocks ? 'text-green-400' : 'text-zinc-700'}`}>
-                                            {result.structure.has_code_blocks ? 'YES' : 'NO'}
+                                        <span className={`font-mono ${structure.has_code_blocks ? 'text-green-400' : 'text-zinc-700'}`}>
+                                            {structure.has_code_blocks ? 'YES' : 'NO'}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between text-[11px]">
                                         <span className="text-zinc-500">Headings Found</span>
-                                        <span className={`font-mono ${result.structure.has_headings ? 'text-green-400' : 'text-zinc-700'}`}>
-                                            {result.structure.has_headings ? 'YES' : 'NO'}
+                                        <span className={`font-mono ${structure.has_headings ? 'text-green-400' : 'text-zinc-700'}`}>
+                                            {structure.has_headings ? 'YES' : 'NO'}
                                         </span>
                                     </div>
                                 </div>
@@ -193,16 +228,16 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-black/40 border border-white/5">
                                     <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Method</span>
-                                    <span className="text-xs font-bold text-white uppercase tracking-tighter">{result.recommended_config.chunking_method} Splitter</span>
+                                    <span className="text-xs font-bold text-white uppercase tracking-tighter">{recommended_config.chunking_method} Splitter</span>
                                 </div>
                                 <div className="flex gap-3">
                                     <div className="flex-1 p-3 rounded-xl bg-black/40 border border-white/5 flex flex-col">
                                         <span className="text-[8px] text-zinc-500 uppercase tracking-widest mb-1">Batch Size</span>
-                                        <span className="text-lg font-black text-white">{result.recommended_config.chunk_size}</span>
+                                        <span className="text-lg font-black text-white">{recommended_config.chunk_size}</span>
                                     </div>
                                     <div className="flex-1 p-3 rounded-xl bg-black/40 border border-white/5 flex flex-col">
                                         <span className="text-[8px] text-zinc-500 uppercase tracking-widest mb-1">Overlap</span>
-                                        <span className="text-lg font-black text-white">{result.recommended_config.overlap}</span>
+                                        <span className="text-lg font-black text-white">{recommended_config.overlap}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-500/10 border border-orange-500/10 text-[10px] text-orange-200/80 leading-relaxed italic">
@@ -224,7 +259,7 @@ export function AnalysisResultOverlay({ result, onClose, onConfirm }: AnalysisRe
                     </button>
                     <div className="flex-1" />
                     <Button
-                        onClick={() => onConfirm(result.recommended_config)}
+                        onClick={() => onConfirm(recommended_config)}
                         className="w-full md:w-auto bg-gradient-to-r from-orange-400 to-amber-600 text-black font-black text-[11px] uppercase tracking-[0.2em] h-14 px-12 rounded-2xl shadow-[0_10px_30px_rgba(245,183,0,0.3)] hover:shadow-[0_15px_40px_rgba(245,183,0,0.5)] transition-all hover:scale-[1.02] active:scale-95 border-none"
                     >
                         <span className="flex items-center gap-3">
