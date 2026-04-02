@@ -7,12 +7,23 @@ import { usePipelineStore, NodeExecutionState } from '@/stores/usePipelineStore'
 import { getNodeDef, CATEGORY_COLORS, NodeCategory } from '@/lib/pipeline-nodes'
 import {
     FileUp, Scissors, BrainCircuit, Database, Search, ArrowUpDown,
-    MessageSquare, BarChart3, Loader2, CheckCircle2, XCircle, Eye, Trash2
+    MessageSquare, BarChart3, Loader2, CheckCircle2, XCircle, Eye, Trash2, Info
 } from 'lucide-react'
+import { useState } from 'react'
+import { StrategyInfoDrawer } from '@/components/pipeline/StrategyInfoDrawer'
 
 const ICON_MAP: Record<string, React.ElementType> = {
     FileUp, Scissors, BrainCircuit, Database, Search, ArrowUpDown,
     MessageSquare, BarChart3,
+}
+
+function getStrategyId(type: string, data: Record<string, unknown>): string | null {
+    switch (type) {
+        case 'chunking': return (data.method as string) || 'recursive'
+        case 'retriever': return (data.strategy as string) || 'dense'
+        case 'reranker': return (data.provider as string) || 'cross-encoder'
+        default: return null
+    }
 }
 
 function getConfigSummary(type: string, data: Record<string, any>): string {
@@ -54,11 +65,15 @@ function PipelineNodeInner({ id, data, selected, type }: NodeProps) {
     const executionState = usePipelineStore((s) => s.executionState[id])
     const hasPreview = usePipelineStore((s) => !!s.nodePreviewData[id])
 
+    const [infoOpen, setInfoOpen] = useState(false)
+    const [infoStrategyId, setInfoStrategyId] = useState<string | null>(null)
+
     const nodeDef = getNodeDef(type || '')
     const category = (nodeDef?.category || 'processing') as NodeCategory
     const colors = CATEGORY_COLORS[category]
     const IconComponent = ICON_MAP[nodeDef?.icon || 'Database'] || Database
     const isSource = category === 'source'
+    const strategyId = getStrategyId(type || '', data)
 
     const handleClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation()
@@ -74,6 +89,14 @@ function PipelineNodeInner({ id, data, selected, type }: NodeProps) {
         e.stopPropagation()
         selectNode(id)
     }, [id, selectNode])
+
+    const handleInfoClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (strategyId) {
+            setInfoStrategyId(strategyId)
+            setInfoOpen(true)
+        }
+    }, [strategyId])
 
     return (
         <div
@@ -107,6 +130,15 @@ function PipelineNodeInner({ id, data, selected, type }: NodeProps) {
                 <span className="text-xs font-semibold text-neutral-200 flex-1 truncate">
                     {nodeDef?.label || type}
                 </span>
+                {strategyId && (
+                    <button
+                        onClick={handleInfoClick}
+                        className="p-0.5 rounded hover:bg-white/10 transition-all text-neutral-500 hover:text-white hover:shadow-[0_0_6px_rgba(255,255,255,0.15)]"
+                        title="Strategy info"
+                    >
+                        <Info className="w-3 h-3" />
+                    </button>
+                )}
                 <ExecutionIndicator state={executionState} />
                 {hasPreview && (
                     <button
@@ -151,6 +183,16 @@ function PipelineNodeInner({ id, data, selected, type }: NodeProps) {
                     style={{ background: colors.handle }}
                 />
             )}
+
+            {/* Strategy Info Drawer */}
+            <StrategyInfoDrawer
+                open={infoOpen}
+                onOpenChange={setInfoOpen}
+                strategyId={infoStrategyId}
+                onSelectStrategy={(newId) => {
+                    setInfoStrategyId(newId)
+                }}
+            />
         </div>
     )
 }

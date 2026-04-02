@@ -15,11 +15,13 @@ const PipelineBuilder = dynamic(
     }
 )
 import { usePipelineStore } from '@/stores/usePipelineStore'
-import { ArrowLeft, Save, FolderOpen, Loader2, Check } from 'lucide-react'
+import { ArrowLeft, Save, FolderOpen, Loader2, Check, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { apiClient } from '@/lib/api'
 import { buildPipelineConfig } from '@/lib/pipeline-nodes'
+import { PipelineHealth } from '@/components/pipeline/PipelineHealth'
+import { PipelineWizard } from '@/components/pipeline/PipelineWizard'
 
 function PipelineNameEditor() {
     const pipelineName = usePipelineStore((s) => s.pipelineName)
@@ -173,6 +175,7 @@ function LoadButton() {
 
 export default function PipelinePage() {
     const isExecuting = usePipelineStore((s) => s.isExecuting)
+    const [wizardOpen, setWizardOpen] = useState(false)
 
     return (
         <div className="relative h-screen w-screen flex flex-col bg-black overflow-hidden font-sans">
@@ -195,6 +198,10 @@ export default function PipelinePage() {
 
                 <PipelineNameEditor />
 
+                <div className="ml-3">
+                    <PipelineHealth />
+                </div>
+
                 <div className="ml-auto flex items-center gap-1">
                     {isExecuting && (
                         <span className="text-[9px] text-yellow-400 font-mono flex items-center gap-1.5 mr-3">
@@ -208,6 +215,15 @@ export default function PipelinePage() {
                             Ready
                         </span>
                     )}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2.5 text-[10px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                        onClick={() => setWizardOpen(true)}
+                    >
+                        <Wand2 className="w-3.5 h-3.5" />
+                        <span className="ml-1.5">New Pipeline</span>
+                    </Button>
                     <LoadButton />
                     <SaveButton />
                 </div>
@@ -217,6 +233,9 @@ export default function PipelinePage() {
             <main className="relative z-10 flex-1 overflow-hidden">
                 <PipelineBuilder />
             </main>
+
+            {/* Pipeline Wizard */}
+            <PipelineWizard open={wizardOpen} onOpenChange={setWizardOpen} />
         </div>
     )
 }

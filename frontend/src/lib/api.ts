@@ -131,6 +131,34 @@ export const costApi = {
     },
 };
 
+export const guideApi = {
+    getStrategies: async (category?: string) => {
+        const params = category ? { category } : {};
+        const response = await apiClient.get('/api/v1/guide/strategies', { params });
+        return response.data;
+    },
+    getStrategy: async (id: string) => {
+        const response = await apiClient.get(`/api/v1/guide/strategies/${id}`);
+        return response.data;
+    },
+    getPairs: async (id: string) => {
+        const response = await apiClient.get(`/api/v1/guide/strategies/${id}/pairs`);
+        return response.data;
+    },
+    compare: async (ids: string[]) => {
+        const response = await apiClient.get('/api/v1/guide/compare', { params: { ids: ids.join(',') } });
+        return response.data;
+    },
+    recommend: async (data: { document_type: string; document_count: string; question_type: string; priority: string }) => {
+        const response = await apiClient.post('/api/v1/guide/recommend', data);
+        return response.data;
+    },
+    getDecisionTree: async (category: string) => {
+        const response = await apiClient.get(`/api/v1/guide/decision-tree/${category}`);
+        return response.data;
+    },
+};
+
 export const analyzerApi = {
     analyzeDocument: async (file: File) => {
         const formData = new FormData();

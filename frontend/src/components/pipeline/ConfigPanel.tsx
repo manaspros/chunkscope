@@ -23,9 +23,33 @@ import {
 } from '@/lib/pipeline-nodes'
 import {
     X, FileUp, Upload, Type, Scissors, BrainCircuit, Database, Search,
-    ArrowUpDown, MessageSquare, BarChart3, Eye, AlertCircle,
+    ArrowUpDown, MessageSquare, BarChart3, Eye, AlertCircle, Info,
 } from 'lucide-react'
 import { documentsApi } from '@/lib/api'
+import { StrategyInfoDrawer } from '@/components/pipeline/StrategyInfoDrawer'
+
+function StrategyInfoButton({ strategyId }: { strategyId: string }) {
+    const [open, setOpen] = useState(false)
+    const [currentId, setCurrentId] = useState(strategyId)
+
+    return (
+        <>
+            <button
+                onClick={() => { setCurrentId(strategyId); setOpen(true) }}
+                className="p-1 rounded hover:bg-white/10 transition-all text-neutral-500 hover:text-white hover:shadow-[0_0_6px_rgba(255,255,255,0.15)]"
+                title="Strategy info"
+            >
+                <Info className="w-3.5 h-3.5" />
+            </button>
+            <StrategyInfoDrawer
+                open={open}
+                onOpenChange={setOpen}
+                strategyId={currentId}
+                onSelectStrategy={(id) => setCurrentId(id)}
+            />
+        </>
+    )
+}
 
 
 
@@ -147,7 +171,10 @@ function ChunkingConfig({ nodeId, data }: { nodeId: string; data: any }) {
     return (
         <div className="space-y-4">
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Strategy</Label>
+                <div className="flex items-center justify-between">
+                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Strategy</Label>
+                    <StrategyInfoButton strategyId={data.method || 'recursive'} />
+                </div>
                 <Select
                     value={data.method || 'recursive'}
                     onValueChange={(val) => updateNodeData(nodeId, { method: val })}
@@ -351,7 +378,10 @@ function RetrieverConfig({ nodeId, data }: { nodeId: string; data: any }) {
     return (
         <div className="space-y-4">
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Strategy</Label>
+                <div className="flex items-center justify-between">
+                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Strategy</Label>
+                    <StrategyInfoButton strategyId={data.strategy || 'dense'} />
+                </div>
                 <Select
                     value={data.strategy || 'dense'}
                     onValueChange={(val) => updateNodeData(nodeId, { strategy: val })}
@@ -414,7 +444,10 @@ function RerankerConfig({ nodeId, data }: { nodeId: string; data: any }) {
     return (
         <div className="space-y-4">
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Provider</Label>
+                <div className="flex items-center justify-between">
+                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Provider</Label>
+                    <StrategyInfoButton strategyId={data.provider || 'cross-encoder'} />
+                </div>
                 <Select
                     value={data.provider || 'cross-encoder'}
                     onValueChange={(val) => updateNodeData(nodeId, { provider: val })}

@@ -50,6 +50,12 @@ export function Navbar() {
                     >
                         Templates
                     </Link>
+                    <Link
+                        href="/guide"
+                        className={cn("hover:text-white transition-colors", isActive('/guide') && "text-white font-semibold")}
+                    >
+                        Strategy Guide
+                    </Link>
                 </nav>
 
                 <div className="flex items-center gap-4">
