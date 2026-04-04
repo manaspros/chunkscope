@@ -53,44 +53,44 @@ export function CostTicker() {
     const monthlyCost = costPerQuery !== null ? costPerQuery * 1000 * 30 : null
 
     const costColor = (cost: number | null) => {
-        if (cost === null) return 'text-neutral-500'
-        if (cost < 0.01) return 'text-emerald-400'
-        if (cost <= 0.05) return 'text-amber-400'
-        return 'text-red-400'
+        if (cost === null) return 'text-gray-400'
+        if (cost < 0.01) return 'text-emerald-600'
+        if (cost <= 0.05) return 'text-amber-600'
+        return 'text-red-500'
     }
 
     const dotColor = (cost: number | null) => {
-        if (cost === null) return 'bg-neutral-600'
+        if (cost === null) return 'bg-gray-300'
         if (cost < 0.01) return 'bg-emerald-500'
         if (cost <= 0.05) return 'bg-amber-500'
         return 'bg-red-500'
     }
 
     return (
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-50 border border-gray-200">
             <div className={cn("w-1.5 h-1.5 rounded-full", dotColor(costPerQuery))} />
-            <DollarSign className="w-3 h-3 text-neutral-600" />
+            <DollarSign className="w-3 h-3 text-gray-400" />
             {isLoading ? (
                 <div className="flex items-center gap-1">
-                    <Loader2 className="w-3 h-3 text-neutral-600 animate-spin" />
-                    <span className="text-[9px] text-neutral-600">Estimating...</span>
+                    <Loader2 className="w-3 h-3 text-gray-400 animate-spin" />
+                    <span className="text-[9px] text-gray-400">Estimating...</span>
                 </div>
             ) : hasError ? (
-                <span className="text-[9px] text-neutral-600">Cost unavailable</span>
+                <span className="text-[9px] text-gray-400">Cost unavailable</span>
             ) : costPerQuery !== null ? (
                 <span className="text-[9px] font-mono">
-                    <span className="text-neutral-500">Est. cost: </span>
+                    <span className="text-gray-500">Est. cost: </span>
                     <span className={costColor(costPerQuery)}>${costPerQuery.toFixed(4)}/query</span>
                     {monthlyCost !== null && (
                         <>
-                            <span className="text-neutral-600"> | </span>
+                            <span className="text-gray-400"> | </span>
                             <span className={costColor(costPerQuery)}>${monthlyCost.toFixed(2)}/mo</span>
-                            <span className="text-neutral-600"> at 1K/day</span>
+                            <span className="text-gray-400"> at 1K/day</span>
                         </>
                     )}
                 </span>
             ) : (
-                <span className="text-[9px] text-neutral-600">Add nodes to see cost estimate</span>
+                <span className="text-[9px] text-gray-400">Add nodes to see cost estimate</span>
             )}
         </div>
     )

@@ -125,31 +125,31 @@ function PipelineBuilderInner() {
                         isValidConnection={isValidConnection}
                         nodeTypes={nodeTypes}
                         fitView
-                        className="bg-neutral-950"
+                        className="bg-gray-50"
                         defaultEdgeOptions={{
                             animated: true,
                             style: { stroke: '#6366f1', strokeWidth: 2 },
                         }}
                         proOptions={{ hideAttribution: true }}
                     >
-                        <Background color="#1a1a1a" gap={20} size={1} />
+                        <Background color="#e5e7eb" gap={20} size={1} />
                         <Controls
-                            className="!bg-neutral-900/90 !border-white/[0.06] !shadow-xl [&>button]:!bg-neutral-900 [&>button]:!border-white/[0.06] [&>button]:!text-neutral-400 [&>button:hover]:!bg-neutral-800 [&>button:hover]:!text-white"
+                            className="!bg-white !border-gray-200 !shadow-sm [&>button]:!bg-white [&>button]:!border-gray-200 [&>button]:!text-gray-500 [&>button:hover]:!bg-gray-50 [&>button:hover]:!text-gray-900"
                         />
                         <MiniMap
-                            className="!bg-neutral-900/80 !border-white/[0.06]"
+                            className="!bg-white/90 !border-gray-200"
                             nodeColor={(node) => {
                                 const def = getNodeDef(node.type || '')
-                                if (!def) return '#404040'
+                                if (!def) return '#d1d5db'
                                 const map: Record<string, string> = {
                                     source: '#3b82f6',
                                     processing: '#a855f7',
                                     retrieval: '#10b981',
                                     output: '#f97316',
                                 }
-                                return map[def.category] || '#404040'
+                                return map[def.category] || '#d1d5db'
                             }}
-                            maskColor="rgba(0,0,0,0.7)"
+                            maskColor="rgba(255,255,255,0.7)"
                         />
                     </ReactFlow>
 
@@ -157,13 +157,13 @@ function PipelineBuilderInner() {
                     {nodes.length === 0 && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="text-center">
-                                <div className="w-16 h-16 rounded-2xl bg-white/[0.02] border border-dashed border-white/[0.08] flex items-center justify-center mx-auto mb-4">
-                                    <svg className="w-6 h-6 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div className="w-16 h-16 rounded-2xl bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center mx-auto mb-4">
+                                    <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.5v15m7.5-7.5h-15" />
                                     </svg>
                                 </div>
-                                <p className="text-sm text-neutral-600 font-medium">Drag nodes from the palette</p>
-                                <p className="text-xs text-neutral-700 mt-1">to start building your RAG pipeline</p>
+                                <p className="text-sm text-gray-500 font-medium">Drag nodes from the palette</p>
+                                <p className="text-xs text-gray-400 mt-1">to start building your RAG pipeline</p>
                             </div>
                         </div>
                     )}

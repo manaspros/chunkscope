@@ -88,25 +88,25 @@ function RadioOption({
             className={cn(
                 "flex items-center gap-3 p-3 rounded-lg border text-left transition-all w-full",
                 selected
-                    ? "bg-white/[0.06] border-white/20 text-white"
-                    : "bg-white/[0.02] border-white/[0.06] text-neutral-400 hover:bg-white/[0.04] hover:border-white/10"
+                    ? "bg-gray-50 border-gray-300 text-gray-900"
+                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300"
             )}
         >
             <div className={cn(
                 "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                selected ? "bg-white/10" : "bg-white/[0.03]"
+                selected ? "bg-gray-100" : "bg-gray-50"
             )}>
-                <Icon className={cn("w-4 h-4", selected ? (color || "text-white") : "text-neutral-500")} />
+                <Icon className={cn("w-4 h-4", selected ? (color || "text-gray-900") : "text-gray-400")} />
             </div>
             <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold">{label}</p>
-                <p className="text-[10px] text-neutral-500">{desc}</p>
+                <p className="text-[10px] text-gray-500">{desc}</p>
             </div>
             <div className={cn(
                 "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
-                selected ? "border-white bg-white" : "border-neutral-600"
+                selected ? "border-gray-900 bg-gray-900" : "border-gray-300"
             )}>
-                {selected && <div className="w-2 h-2 rounded-full bg-neutral-900" />}
+                {selected && <div className="w-2 h-2 rounded-full bg-white" />}
             </div>
         </button>
     )
@@ -120,7 +120,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
                     key={i}
                     className={cn(
                         "h-1.5 rounded-full transition-all",
-                        i === current ? "w-8 bg-white" : i < current ? "w-4 bg-white/30" : "w-4 bg-white/10"
+                        i === current ? "w-8 bg-gray-900" : i < current ? "w-4 bg-gray-400" : "w-4 bg-gray-200"
                     )}
                 />
             ))}
@@ -364,7 +364,7 @@ export function PipelineWizard({ open, onOpenChange }: PipelineWizardProps) {
                     {/* Step 0: Document Type */}
                     {step === 0 && (
                         <div className="space-y-2">
-                            <p className="text-xs font-semibold text-neutral-300 mb-3">What type of documents?</p>
+                            <p className="text-xs font-semibold text-gray-700 mb-3">What type of documents?</p>
                             <div className="grid grid-cols-2 gap-2">
                                 {DOC_TYPES.map((dt) => (
                                     <RadioOption
@@ -383,7 +383,7 @@ export function PipelineWizard({ open, onOpenChange }: PipelineWizardProps) {
                     {/* Step 1: Document Count */}
                     {step === 1 && (
                         <div className="space-y-2">
-                            <p className="text-xs font-semibold text-neutral-300 mb-3">How many documents?</p>
+                            <p className="text-xs font-semibold text-gray-700 mb-3">How many documents?</p>
                             <div className="space-y-2">
                                 {DOC_COUNTS.map((dc) => (
                                     <RadioOption
@@ -402,7 +402,7 @@ export function PipelineWizard({ open, onOpenChange }: PipelineWizardProps) {
                     {/* Step 2: Question Type */}
                     {step === 2 && (
                         <div className="space-y-2">
-                            <p className="text-xs font-semibold text-neutral-300 mb-3">What kind of questions?</p>
+                            <p className="text-xs font-semibold text-gray-700 mb-3">What kind of questions?</p>
                             <div className="space-y-2">
                                 {QUESTION_TYPES.map((qt) => (
                                     <RadioOption
@@ -421,7 +421,7 @@ export function PipelineWizard({ open, onOpenChange }: PipelineWizardProps) {
                     {/* Step 3: Priority */}
                     {step === 3 && (
                         <div className="space-y-2">
-                            <p className="text-xs font-semibold text-neutral-300 mb-3">What is your priority?</p>
+                            <p className="text-xs font-semibold text-gray-700 mb-3">What is your priority?</p>
                             <div className="space-y-2">
                                 {PRIORITIES.map((p) => (
                                     <RadioOption
@@ -442,17 +442,17 @@ export function PipelineWizard({ open, onOpenChange }: PipelineWizardProps) {
                     {step === 4 && recommendation && (
                         <div className="space-y-4">
                             {recommendation.reasoning && (
-                                <p className="text-xs text-neutral-400 leading-relaxed">{recommendation.reasoning}</p>
+                                <p className="text-xs text-gray-500 leading-relaxed">{recommendation.reasoning}</p>
                             )}
 
                             {recommendation.pipeline.chunking && (
                                 <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
                                     <div className="flex items-center gap-2 mb-1.5">
                                         <Badge className="text-[9px] bg-purple-500/15 text-purple-400 border-purple-500/30">Chunking</Badge>
-                                        <span className="text-xs font-semibold text-white">{recommendation.pipeline.chunking.strategy}</span>
+                                        <span className="text-xs font-semibold text-gray-900">{recommendation.pipeline.chunking.strategy}</span>
                                     </div>
                                     {recommendation.pipeline.chunking.reasoning && (
-                                        <p className="text-[10px] text-neutral-400">{recommendation.pipeline.chunking.reasoning}</p>
+                                        <p className="text-[10px] text-gray-500">{recommendation.pipeline.chunking.reasoning}</p>
                                     )}
                                 </div>
                             )}
@@ -461,10 +461,10 @@ export function PipelineWizard({ open, onOpenChange }: PipelineWizardProps) {
                                 <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
                                     <div className="flex items-center gap-2 mb-1.5">
                                         <Badge className="text-[9px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Retrieval</Badge>
-                                        <span className="text-xs font-semibold text-white">{recommendation.pipeline.retrieval.strategy}</span>
+                                        <span className="text-xs font-semibold text-gray-900">{recommendation.pipeline.retrieval.strategy}</span>
                                     </div>
                                     {recommendation.pipeline.retrieval.reasoning && (
-                                        <p className="text-[10px] text-neutral-400">{recommendation.pipeline.retrieval.reasoning}</p>
+                                        <p className="text-[10px] text-gray-500">{recommendation.pipeline.retrieval.reasoning}</p>
                                     )}
                                 </div>
                             )}
@@ -473,10 +473,10 @@ export function PipelineWizard({ open, onOpenChange }: PipelineWizardProps) {
                                 <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
                                     <div className="flex items-center gap-2 mb-1.5">
                                         <Badge className="text-[9px] bg-amber-500/15 text-amber-400 border-amber-500/30">Reranking</Badge>
-                                        <span className="text-xs font-semibold text-white">{recommendation.pipeline.reranking.strategy}</span>
+                                        <span className="text-xs font-semibold text-gray-900">{recommendation.pipeline.reranking.strategy}</span>
                                     </div>
                                     {recommendation.pipeline.reranking.reasoning && (
-                                        <p className="text-[10px] text-neutral-400">{recommendation.pipeline.reranking.reasoning}</p>
+                                        <p className="text-[10px] text-gray-500">{recommendation.pipeline.reranking.reasoning}</p>
                                     )}
                                 </div>
                             )}
@@ -496,7 +496,7 @@ export function PipelineWizard({ open, onOpenChange }: PipelineWizardProps) {
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 text-xs text-neutral-400 hover:text-white"
+                            className="h-8 text-xs text-gray-400 hover:text-gray-900"
                             onClick={() => setStep(step - 1)}
                         >
                             <ArrowLeft className="w-3 h-3 mr-1" /> Back
@@ -505,7 +505,7 @@ export function PipelineWizard({ open, onOpenChange }: PipelineWizardProps) {
                     {step < 3 && (
                         <Button
                             size="sm"
-                            className="h-8 text-xs bg-white text-black hover:bg-neutral-200"
+                            className="h-8 text-xs bg-gray-900 text-white hover:bg-gray-800"
                             onClick={() => setStep(step + 1)}
                             disabled={!canProceed()}
                         >

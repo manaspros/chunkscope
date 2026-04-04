@@ -36,7 +36,7 @@ function StrategyInfoButton({ strategyId }: { strategyId: string }) {
         <>
             <button
                 onClick={() => { setCurrentId(strategyId); setOpen(true) }}
-                className="p-1 rounded hover:bg-white/10 transition-all text-neutral-500 hover:text-white hover:shadow-[0_0_6px_rgba(255,255,255,0.15)]"
+                className="p-1 rounded hover:bg-gray-100 transition-all text-gray-400 hover:text-gray-700"
                 title="Strategy info"
             >
                 <Info className="w-3.5 h-3.5" />
@@ -70,7 +70,6 @@ function DocumentUploadConfig({ nodeId, data }: { nodeId: string; data: any }) {
         try {
             const file = files[0]
             if (isZipFile(file)) {
-                // ZIP upload
                 const result = await documentsApi.uploadZip(file)
                 updateNodeData(nodeId, {
                     uploadMode: 'file',
@@ -79,7 +78,6 @@ function DocumentUploadConfig({ nodeId, data }: { nodeId: string; data: any }) {
                     uploadType: 'zip',
                 })
             } else if (files.length > 1) {
-                // Folder / multi-file upload
                 const results = await documentsApi.uploadMultiple(files)
                 updateNodeData(nodeId, {
                     uploadMode: 'file',
@@ -89,7 +87,6 @@ function DocumentUploadConfig({ nodeId, data }: { nodeId: string; data: any }) {
                     uploadType: 'folder',
                 })
             } else {
-                // Single file upload
                 const result = await documentsApi.uploadDocument(file)
                 updateNodeData(nodeId, {
                     uploadMode: 'file',
@@ -113,12 +110,12 @@ function DocumentUploadConfig({ nodeId, data }: { nodeId: string; data: any }) {
     return (
         <div className="space-y-4">
             {/* Mode toggle */}
-            <div className="flex gap-1 p-0.5 bg-white/[0.03] rounded-lg border border-white/[0.06]">
+            <div className="flex gap-1 p-0.5 bg-gray-50 rounded-lg border border-gray-200">
                 <button
                     onClick={() => updateNodeData(nodeId, { uploadMode: 'file' })}
                     className={cn(
                         "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-medium transition-all",
-                        data.uploadMode !== 'text' ? "bg-white/[0.08] text-white" : "text-neutral-500 hover:text-neutral-300"
+                        data.uploadMode !== 'text' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
                     )}
                 >
                     <Upload className="w-3 h-3" /> File Upload
@@ -127,7 +124,7 @@ function DocumentUploadConfig({ nodeId, data }: { nodeId: string; data: any }) {
                     onClick={() => updateNodeData(nodeId, { uploadMode: 'text' })}
                     className={cn(
                         "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-medium transition-all",
-                        data.uploadMode === 'text' ? "bg-white/[0.08] text-white" : "text-neutral-500 hover:text-neutral-300"
+                        data.uploadMode === 'text' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
                     )}
                 >
                     <Type className="w-3 h-3" /> Paste Text
@@ -136,9 +133,9 @@ function DocumentUploadConfig({ nodeId, data }: { nodeId: string; data: any }) {
 
             {data.uploadMode === 'text' ? (
                 <div className="space-y-1.5">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Text Content</Label>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Text Content</Label>
                     <textarea
-                        className="w-full h-32 text-[11px] px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-neutral-300 resize-none focus:outline-none focus:ring-1 focus:ring-white/20 placeholder:text-neutral-600"
+                        className="w-full h-32 text-[11px] px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 resize-none focus:outline-none focus:ring-1 focus:ring-gray-300 placeholder:text-gray-400"
                         placeholder="Paste your document text here..."
                         value={data.text || ''}
                         onChange={(e) => updateNodeData(nodeId, { text: e.target.value })}
@@ -168,7 +165,7 @@ function ChunkingConfig({ nodeId, data }: { nodeId: string; data: any }) {
         <div className="space-y-4">
             <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Strategy</Label>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Strategy</Label>
                     <div className="flex items-center gap-1">
                         {data.method === 'recursive' && SMART_DEFAULTS['chunking.recursive'] && (
                             <SmartDefaultBadge type={SMART_DEFAULTS['chunking.recursive'].type} reason={SMART_DEFAULTS['chunking.recursive'].reason} />
@@ -180,10 +177,10 @@ function ChunkingConfig({ nodeId, data }: { nodeId: string; data: any }) {
                     value={data.method || 'recursive'}
                     onValueChange={(val) => updateNodeData(nodeId, { method: val })}
                 >
-                    <SelectTrigger className="h-8 text-xs bg-white/[0.03] border-white/[0.06] text-neutral-300">
+                    <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-white/10 text-neutral-300">
+                    <SelectContent className="bg-white border-gray-200 text-gray-700">
                         {CHUNKING_STRATEGIES.map((s) => (
                             <SelectItem key={s.id} value={s.id}>
                                 <div className="flex flex-col">
@@ -193,15 +190,15 @@ function ChunkingConfig({ nodeId, data }: { nodeId: string; data: any }) {
                         ))}
                     </SelectContent>
                 </Select>
-                <p className="text-[9px] text-neutral-600">
+                <p className="text-[9px] text-gray-400">
                     {CHUNKING_STRATEGIES.find((s) => s.id === (data.method || 'recursive'))?.description}
                 </p>
             </div>
 
             <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Chunk Size</Label>
-                    <span className="text-[10px] text-purple-400 font-mono">{data.chunkSize || 500}</span>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Chunk Size</Label>
+                    <span className="text-[10px] text-purple-600 font-mono">{data.chunkSize || 500}</span>
                 </div>
                 <Slider
                     value={[data.chunkSize || 500]}
@@ -211,15 +208,15 @@ function ChunkingConfig({ nodeId, data }: { nodeId: string; data: any }) {
                     onValueChange={([val]) => updateNodeData(nodeId, { chunkSize: val })}
                     className="py-2"
                 />
-                <div className="flex justify-between text-[9px] text-neutral-600">
+                <div className="flex justify-between text-[9px] text-gray-400">
                     <span>100</span><span>2000</span>
                 </div>
             </div>
 
             <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Overlap</Label>
-                    <span className="text-[10px] text-purple-400 font-mono">{data.overlap || 50}</span>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Overlap</Label>
+                    <span className="text-[10px] text-purple-600 font-mono">{data.overlap || 50}</span>
                 </div>
                 <Slider
                     value={[data.overlap || 50]}
@@ -229,7 +226,7 @@ function ChunkingConfig({ nodeId, data }: { nodeId: string; data: any }) {
                     onValueChange={([val]) => updateNodeData(nodeId, { overlap: val })}
                     className="py-2"
                 />
-                <div className="flex justify-between text-[9px] text-neutral-600">
+                <div className="flex justify-between text-[9px] text-gray-400">
                     <span>0</span><span>200</span>
                 </div>
             </div>
@@ -237,8 +234,8 @@ function ChunkingConfig({ nodeId, data }: { nodeId: string; data: any }) {
             {data.method === 'semantic' && (
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                        <Label className="text-[10px] uppercase text-neutral-500 font-bold">Similarity Threshold</Label>
-                        <span className="text-[10px] text-purple-400 font-mono">{(data.threshold ?? 0.5).toFixed(2)}</span>
+                        <Label className="text-[10px] uppercase text-gray-500 font-bold">Similarity Threshold</Label>
+                        <span className="text-[10px] text-purple-600 font-mono">{(data.threshold ?? 0.5).toFixed(2)}</span>
                     </div>
                     <Slider
                         value={[data.threshold ?? 0.5]}
@@ -265,7 +262,7 @@ function EmbeddingConfig({ nodeId, data }: { nodeId: string; data: any }) {
         <div className="space-y-4">
             <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Provider</Label>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Provider</Label>
                     {modelId === 'text-embedding-3-small' && SMART_DEFAULTS['embedding.openai.text-embedding-3-small'] && (
                         <SmartDefaultBadge type={SMART_DEFAULTS['embedding.openai.text-embedding-3-small'].type} reason={SMART_DEFAULTS['embedding.openai.text-embedding-3-small'].reason} />
                     )}
@@ -277,10 +274,10 @@ function EmbeddingConfig({ nodeId, data }: { nodeId: string; data: any }) {
                         updateNodeData(nodeId, { provider: val, model: firstModel?.id })
                     }}
                 >
-                    <SelectTrigger className="h-8 text-xs bg-white/[0.03] border-white/[0.06] text-neutral-300">
+                    <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-white/10 text-neutral-300">
+                    <SelectContent className="bg-white border-gray-200 text-gray-700">
                         {Object.entries(EMBEDDING_MODELS).map(([key, p]) => (
                             <SelectItem key={key} value={key}>{p.name}</SelectItem>
                         ))}
@@ -289,15 +286,15 @@ function EmbeddingConfig({ nodeId, data }: { nodeId: string; data: any }) {
             </div>
 
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Model</Label>
+                <Label className="text-[10px] uppercase text-gray-500 font-bold">Model</Label>
                 <Select
                     value={modelId}
                     onValueChange={(val) => updateNodeData(nodeId, { model: val })}
                 >
-                    <SelectTrigger className="h-8 text-xs bg-white/[0.03] border-white/[0.06] text-neutral-300">
+                    <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-white/10 text-neutral-300">
+                    <SelectContent className="bg-white border-gray-200 text-gray-700">
                         {providerData?.models.map((m) => (
                             <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                         ))}
@@ -306,20 +303,20 @@ function EmbeddingConfig({ nodeId, data }: { nodeId: string; data: any }) {
             </div>
 
             {currentModel && (
-                <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-gray-50 border border-gray-200">
                     <div className="text-center">
-                        <p className="text-[8px] text-neutral-500 uppercase font-bold">Dimensions</p>
-                        <p className="text-[11px] text-purple-400 font-mono">{currentModel.dimensions}</p>
+                        <p className="text-[8px] text-gray-500 uppercase font-bold">Dimensions</p>
+                        <p className="text-[11px] text-purple-600 font-mono">{currentModel.dimensions}</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-[8px] text-neutral-500 uppercase font-bold">Cost/1M</p>
-                        <p className={cn("text-[11px] font-mono", currentModel.cost === 0 ? "text-emerald-400" : "text-amber-400")}>
+                        <p className="text-[8px] text-gray-500 uppercase font-bold">Cost/1M</p>
+                        <p className={cn("text-[11px] font-mono", currentModel.cost === 0 ? "text-emerald-600" : "text-amber-600")}>
                             {currentModel.cost === 0 ? 'FREE' : `$${currentModel.cost}`}
                         </p>
                     </div>
                     <div className="text-center">
-                        <p className="text-[8px] text-neutral-500 uppercase font-bold">Quality</p>
-                        <p className="text-[11px] text-neutral-300">{currentModel.quality}</p>
+                        <p className="text-[8px] text-gray-500 uppercase font-bold">Quality</p>
+                        <p className="text-[11px] text-gray-700">{currentModel.quality}</p>
                     </div>
                 </div>
             )}
@@ -333,15 +330,15 @@ function VectorStoreConfig({ nodeId, data }: { nodeId: string; data: any }) {
     return (
         <div className="space-y-4">
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Provider</Label>
+                <Label className="text-[10px] uppercase text-gray-500 font-bold">Provider</Label>
                 <Select
                     value={data.provider || 'pgvector'}
                     onValueChange={(val) => updateNodeData(nodeId, { provider: val })}
                 >
-                    <SelectTrigger className="h-8 text-xs bg-white/[0.03] border-white/[0.06] text-neutral-300">
+                    <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-white/10 text-neutral-300">
+                    <SelectContent className="bg-white border-gray-200 text-gray-700">
                         <SelectItem value="pgvector">pgvector (PostgreSQL)</SelectItem>
                         <SelectItem value="chroma">ChromaDB</SelectItem>
                         <SelectItem value="pinecone">Pinecone</SelectItem>
@@ -351,24 +348,24 @@ function VectorStoreConfig({ nodeId, data }: { nodeId: string; data: any }) {
             </div>
 
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Collection Name</Label>
+                <Label className="text-[10px] uppercase text-gray-500 font-bold">Collection Name</Label>
                 <Input
-                    className="h-8 text-xs bg-white/[0.03] border-white/[0.06] text-neutral-300"
+                    className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700"
                     value={data.collection || 'default'}
                     onChange={(e) => updateNodeData(nodeId, { collection: e.target.value })}
                 />
             </div>
 
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Index Type</Label>
+                <Label className="text-[10px] uppercase text-gray-500 font-bold">Index Type</Label>
                 <Select
                     value={data.indexType || 'hnsw'}
                     onValueChange={(val) => updateNodeData(nodeId, { indexType: val })}
                 >
-                    <SelectTrigger className="h-8 text-xs bg-white/[0.03] border-white/[0.06] text-neutral-300">
+                    <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-white/10 text-neutral-300">
+                    <SelectContent className="bg-white border-gray-200 text-gray-700">
                         <SelectItem value="hnsw">HNSW</SelectItem>
                         <SelectItem value="ivfflat">IVFFlat</SelectItem>
                     </SelectContent>
@@ -385,31 +382,31 @@ function RetrieverConfig({ nodeId, data }: { nodeId: string; data: any }) {
         <div className="space-y-4">
             <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Strategy</Label>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Strategy</Label>
                     <StrategyInfoButton strategyId={data.strategy || 'dense'} />
                 </div>
                 <Select
                     value={data.strategy || 'dense'}
                     onValueChange={(val) => updateNodeData(nodeId, { strategy: val })}
                 >
-                    <SelectTrigger className="h-8 text-xs bg-white/[0.03] border-white/[0.06] text-neutral-300">
+                    <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-white/10 text-neutral-300">
+                    <SelectContent className="bg-white border-gray-200 text-gray-700">
                         {RETRIEVAL_STRATEGIES.map((s) => (
                             <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-                <p className="text-[9px] text-neutral-600">
+                <p className="text-[9px] text-gray-400">
                     {RETRIEVAL_STRATEGIES.find((s) => s.id === (data.strategy || 'dense'))?.description}
                 </p>
             </div>
 
             <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Top K</Label>
-                    <span className="text-[10px] text-emerald-400 font-mono">{data.topK || 5}</span>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Top K</Label>
+                    <span className="text-[10px] text-emerald-600 font-mono">{data.topK || 5}</span>
                 </div>
                 <Slider
                     value={[data.topK || 5]}
@@ -424,8 +421,8 @@ function RetrieverConfig({ nodeId, data }: { nodeId: string; data: any }) {
             {data.strategy === 'hybrid' && (
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                        <Label className="text-[10px] uppercase text-neutral-500 font-bold">Alpha (Vector Weight)</Label>
-                        <span className="text-[10px] text-emerald-400 font-mono">{(data.alpha ?? 0.7).toFixed(2)}</span>
+                        <Label className="text-[10px] uppercase text-gray-500 font-bold">Alpha (Vector Weight)</Label>
+                        <span className="text-[10px] text-emerald-600 font-mono">{(data.alpha ?? 0.7).toFixed(2)}</span>
                     </div>
                     <Slider
                         value={[data.alpha ?? 0.7]}
@@ -435,7 +432,7 @@ function RetrieverConfig({ nodeId, data }: { nodeId: string; data: any }) {
                         onValueChange={([val]) => updateNodeData(nodeId, { alpha: val })}
                         className="py-2"
                     />
-                    <div className="flex justify-between text-[9px] text-neutral-600">
+                    <div className="flex justify-between text-[9px] text-gray-400">
                         <span>Keyword only</span><span>Vector only</span>
                     </div>
                 </div>
@@ -451,31 +448,31 @@ function RerankerConfig({ nodeId, data }: { nodeId: string; data: any }) {
         <div className="space-y-4">
             <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Provider</Label>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Provider</Label>
                     <StrategyInfoButton strategyId={data.provider || 'cross-encoder'} />
                 </div>
                 <Select
                     value={data.provider || 'cross-encoder'}
                     onValueChange={(val) => updateNodeData(nodeId, { provider: val })}
                 >
-                    <SelectTrigger className="h-8 text-xs bg-white/[0.03] border-white/[0.06] text-neutral-300">
+                    <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-white/10 text-neutral-300">
+                    <SelectContent className="bg-white border-gray-200 text-gray-700">
                         {RERANKER_PROVIDERS.map((p) => (
                             <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-                <p className="text-[9px] text-neutral-600">
+                <p className="text-[9px] text-gray-400">
                     {RERANKER_PROVIDERS.find((p) => p.id === (data.provider || 'cross-encoder'))?.description}
                 </p>
             </div>
 
             <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Top N (Candidates)</Label>
-                    <span className="text-[10px] text-emerald-400 font-mono">{data.topN || 10}</span>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Top N (Candidates)</Label>
+                    <span className="text-[10px] text-emerald-600 font-mono">{data.topN || 10}</span>
                 </div>
                 <Slider
                     value={[data.topN || 10]}
@@ -489,8 +486,8 @@ function RerankerConfig({ nodeId, data }: { nodeId: string; data: any }) {
 
             <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Return K (Final)</Label>
-                    <span className="text-[10px] text-emerald-400 font-mono">{data.returnK || 5}</span>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Return K (Final)</Label>
+                    <span className="text-[10px] text-emerald-600 font-mono">{data.returnK || 5}</span>
                 </div>
                 <Slider
                     value={[data.returnK || 5]}
@@ -511,20 +508,20 @@ function LLMConfig({ nodeId, data }: { nodeId: string; data: any }) {
     return (
         <div className="space-y-4">
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Model</Label>
+                <Label className="text-[10px] uppercase text-gray-500 font-bold">Model</Label>
                 <Select
                     value={data.model || 'gpt-4o'}
                     onValueChange={(val) => updateNodeData(nodeId, { model: val })}
                 >
-                    <SelectTrigger className="h-8 text-xs bg-white/[0.03] border-white/[0.06] text-neutral-300">
+                    <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700">
                         <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-white/10 text-neutral-300">
+                    <SelectContent className="bg-white border-gray-200 text-gray-700">
                         {LLM_MODELS.map((m) => (
                             <SelectItem key={m.id} value={m.id}>
                                 <div className="flex items-center gap-2">
                                     <span>{m.label}</span>
-                                    <span className="text-[9px] text-neutral-500">({m.provider})</span>
+                                    <span className="text-[9px] text-gray-400">({m.provider})</span>
                                 </div>
                             </SelectItem>
                         ))}
@@ -534,8 +531,8 @@ function LLMConfig({ nodeId, data }: { nodeId: string; data: any }) {
 
             <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Temperature</Label>
-                    <span className="text-[10px] text-orange-400 font-mono">{(data.temperature ?? 0.7).toFixed(2)}</span>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Temperature</Label>
+                    <span className="text-[10px] text-orange-600 font-mono">{(data.temperature ?? 0.7).toFixed(2)}</span>
                 </div>
                 <Slider
                     value={[data.temperature ?? 0.7]}
@@ -545,15 +542,15 @@ function LLMConfig({ nodeId, data }: { nodeId: string; data: any }) {
                     onValueChange={([val]) => updateNodeData(nodeId, { temperature: val })}
                     className="py-2"
                 />
-                <div className="flex justify-between text-[9px] text-neutral-600">
+                <div className="flex justify-between text-[9px] text-gray-400">
                     <span>Deterministic</span><span>Creative</span>
                 </div>
             </div>
 
             <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                    <Label className="text-[10px] uppercase text-neutral-500 font-bold">Max Tokens</Label>
-                    <span className="text-[10px] text-orange-400 font-mono">{data.maxTokens || 1024}</span>
+                    <Label className="text-[10px] uppercase text-gray-500 font-bold">Max Tokens</Label>
+                    <span className="text-[10px] text-orange-600 font-mono">{data.maxTokens || 1024}</span>
                 </div>
                 <Slider
                     value={[data.maxTokens || 1024]}
@@ -566,9 +563,9 @@ function LLMConfig({ nodeId, data }: { nodeId: string; data: any }) {
             </div>
 
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">System Prompt</Label>
+                <Label className="text-[10px] uppercase text-gray-500 font-bold">System Prompt</Label>
                 <textarea
-                    className="w-full h-24 text-[11px] px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-neutral-300 resize-none focus:outline-none focus:ring-1 focus:ring-white/20 placeholder:text-neutral-600"
+                    className="w-full h-24 text-[11px] px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 resize-none focus:outline-none focus:ring-1 focus:ring-gray-300 placeholder:text-gray-400"
                     placeholder="You are a helpful assistant..."
                     value={data.systemPrompt || ''}
                     onChange={(e) => updateNodeData(nodeId, { systemPrompt: e.target.value })}
@@ -592,8 +589,8 @@ function EvaluationConfig({ nodeId, data }: { nodeId: string; data: any }) {
     return (
         <div className="space-y-4">
             <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Metrics</Label>
-                <p className="text-[9px] text-neutral-600 mb-2">Select metrics to evaluate pipeline output</p>
+                <Label className="text-[10px] uppercase text-gray-500 font-bold">Metrics</Label>
+                <p className="text-[9px] text-gray-400 mb-2">Select metrics to evaluate pipeline output</p>
                 <div className="space-y-1.5">
                     {EVAL_METRICS.map((metric) => {
                         const isSelected = selectedMetrics.includes(metric.id)
@@ -604,13 +601,13 @@ function EvaluationConfig({ nodeId, data }: { nodeId: string; data: any }) {
                                 className={cn(
                                     "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left transition-all",
                                     isSelected
-                                        ? "bg-orange-500/10 border-orange-500/30 text-orange-300"
-                                        : "bg-white/[0.02] border-white/[0.06] text-neutral-400 hover:bg-white/[0.04]"
+                                        ? "bg-orange-50 border-orange-200 text-orange-700"
+                                        : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
                                 )}
                             >
                                 <div className={cn(
                                     "w-3.5 h-3.5 rounded border-2 flex items-center justify-center transition-all",
-                                    isSelected ? "bg-orange-500 border-orange-500" : "border-neutral-600"
+                                    isSelected ? "bg-orange-500 border-orange-500" : "border-gray-300"
                                 )}>
                                     {isSelected && (
                                         <svg className="w-2 h-2 text-white" viewBox="0 0 12 12" fill="none">
@@ -620,7 +617,7 @@ function EvaluationConfig({ nodeId, data }: { nodeId: string; data: any }) {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-[11px] font-medium">{metric.label}</span>
-                                    <span className="text-[9px] text-neutral-600">{metric.description}</span>
+                                    <span className="text-[9px] text-gray-400">{metric.description}</span>
                                 </div>
                             </button>
                         )
@@ -640,21 +637,21 @@ function NodePreviewPanel({ nodeId }: { nodeId: string }) {
     if (!previewData && executionState !== 'complete') return null;
 
     return (
-        <div className="mt-4 pt-4 border-t border-white/[0.06]">
+        <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="flex items-center gap-2 mb-2">
-                <Eye className="w-3.5 h-3.5 text-neutral-400" />
-                <Label className="text-[10px] uppercase text-neutral-500 font-bold">Output Preview</Label>
+                <Eye className="w-3.5 h-3.5 text-gray-400" />
+                <Label className="text-[10px] uppercase text-gray-500 font-bold">Output Preview</Label>
             </div>
             {previewData ? (
-                <div className="max-h-48 overflow-auto rounded-lg bg-white/[0.02] border border-white/[0.06] p-2">
-                    <pre className="text-[10px] text-neutral-400 font-mono whitespace-pre-wrap">
+                <div className="max-h-48 overflow-auto rounded-lg bg-gray-50 border border-gray-200 p-2">
+                    <pre className="text-[10px] text-gray-600 font-mono whitespace-pre-wrap">
                         {typeof previewData.data === 'string'
                             ? previewData.data
                             : JSON.stringify(previewData.data, null, 2)}
                     </pre>
                 </div>
             ) : (
-                <div className="flex items-center gap-2 py-3 text-[10px] text-neutral-500">
+                <div className="flex items-center gap-2 py-3 text-[10px] text-gray-400">
                     <AlertCircle className="w-3 h-3" />
                     No preview data available yet
                 </div>
@@ -675,7 +672,7 @@ function getConfigComponent(type: string, nodeId: string, data: any) {
         case 'reranker': return <RerankerConfig nodeId={nodeId} data={data} />
         case 'llm_generation': return <LLMConfig nodeId={nodeId} data={data} />
         case 'evaluation': return <EvaluationConfig nodeId={nodeId} data={data} />
-        default: return <p className="text-[11px] text-neutral-500">No configuration available for this node type.</p>
+        default: return <p className="text-[11px] text-gray-500">No configuration available for this node type.</p>
     }
 }
 
@@ -695,22 +692,22 @@ export function ConfigPanel() {
             {selectedNode && nodeDef ? (
                 <div
                     key={selectedNodeId}
-                    className="flex flex-col h-full w-72 bg-neutral-950/80 backdrop-blur-xl border-l border-white/[0.06] animate-slide-in-left"
+                    className="flex flex-col h-full w-72 bg-white border-l border-gray-200 animate-slide-in-left"
                 >
                     {/* Header */}
-                    <div className={cn("flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06]", colors.bg)}>
+                    <div className={cn("flex items-center gap-2.5 px-4 py-3 border-b border-gray-200", colors.bg)}>
                         <div className={cn("p-1.5 rounded-md", colors.bg)}>
                             <IconComponent className={cn("w-4 h-4", colors.text)} />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h3 className="text-xs font-semibold text-white truncate">{nodeDef.label}</h3>
-                            <p className="text-[9px] text-neutral-500">{nodeDef.description}</p>
+                            <h3 className="text-xs font-semibold text-gray-900 truncate">{nodeDef.label}</h3>
+                            <p className="text-[9px] text-gray-500">{nodeDef.description}</p>
                         </div>
                         <button
                             onClick={() => selectNode(null)}
-                            className="p-1 rounded hover:bg-white/10 transition-colors"
+                            className="p-1 rounded hover:bg-black/5 transition-colors"
                         >
-                            <X className="w-3.5 h-3.5 text-neutral-500" />
+                            <X className="w-3.5 h-3.5 text-gray-400" />
                         </button>
                     </div>
 
@@ -724,14 +721,14 @@ export function ConfigPanel() {
                 </div>
             ) : (
                 <div
-                    className="flex flex-col items-center justify-center h-full w-72 bg-neutral-950/80 backdrop-blur-xl border-l border-white/[0.06]"
+                    className="flex flex-col items-center justify-center h-full w-72 bg-white border-l border-gray-200"
                 >
                     <div className="text-center px-6">
-                        <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
-                            <Search className="w-4 h-4 text-neutral-600" />
+                        <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center mx-auto mb-3">
+                            <Search className="w-4 h-4 text-gray-400" />
                         </div>
-                        <p className="text-[11px] text-neutral-500 font-medium">Select a node</p>
-                        <p className="text-[9px] text-neutral-600 mt-1">Click on any node to configure it</p>
+                        <p className="text-[11px] text-gray-500 font-medium">Select a node</p>
+                        <p className="text-[9px] text-gray-400 mt-1">Click on any node to configure it</p>
                     </div>
                 </div>
             )}

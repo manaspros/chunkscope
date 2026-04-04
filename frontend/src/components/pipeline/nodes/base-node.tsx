@@ -25,7 +25,7 @@ export function BaseNode({
     return (
         <div className={cn(
             "relative min-w-[200px] shadow-lg transition-all",
-            selected ? "ring-2 ring-primary ring-offset-2 ring-offset-neutral-950" : ""
+            selected ? "ring-2 ring-primary ring-offset-2 ring-offset-white" : ""
         )}>
             {/* Input Handles */}
             {Array.from({ length: inputs }).map((_, i) => (
@@ -33,14 +33,14 @@ export function BaseNode({
                     key={`in-${i}`}
                     type="target"
                     position={Position.Left}
-                    className="w-3 h-3 bg-neutral-400 border-2 border-neutral-900"
+                    className="w-3 h-3 bg-gray-400 border-2 border-white"
                     style={{ top: `${((i + 1) * 100) / (inputs + 1)}%` }}
                 />
             ))}
 
-            <Card className={cn("bg-neutral-900 border-neutral-800 text-neutral-100", className)}>
-                <CardHeader className="p-3 border-b border-white/10 flex flex-row items-center gap-2 space-y-0">
-                    {icon && <span className="text-neutral-400">{icon}</span>}
+            <Card className={cn("bg-white border-gray-200 text-gray-900", className)}>
+                <CardHeader className="p-3 border-b border-gray-100 flex flex-row items-center gap-2 space-y-0">
+                    {icon && <span className="text-gray-500">{icon}</span>}
                     <CardTitle className="text-sm font-medium">{label}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-3">
@@ -54,7 +54,7 @@ export function BaseNode({
                     key={`out-${i}`}
                     type="source"
                     position={Position.Right}
-                    className="w-3 h-3 bg-primary border-2 border-neutral-900"
+                    className="w-3 h-3 bg-primary border-2 border-white"
                     style={{ top: `${((i + 1) * 100) / (outputs + 1)}%` }}
                 />
             ))}

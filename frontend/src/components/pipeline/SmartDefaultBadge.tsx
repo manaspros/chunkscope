@@ -17,15 +17,15 @@ interface SmartDefaultBadgeProps {
 
 const BADGE_STYLES = {
     auto: {
-        bg: 'bg-blue-500/10 hover:bg-blue-500/15',
-        border: 'border-blue-500/20',
-        text: 'text-blue-400',
+        bg: 'bg-blue-50 hover:bg-blue-100',
+        border: 'border-blue-200',
+        text: 'text-blue-600',
         label: 'Auto',
     },
     recommended: {
-        bg: 'bg-emerald-500/10 hover:bg-emerald-500/15',
-        border: 'border-emerald-500/20',
-        text: 'text-emerald-400',
+        bg: 'bg-emerald-50 hover:bg-emerald-100',
+        border: 'border-emerald-200',
+        text: 'text-emerald-600',
         label: 'Recommended',
     },
 } as const
@@ -54,7 +54,7 @@ export function SmartDefaultBadge({ type, reason, className }: SmartDefaultBadge
                 </TooltipTrigger>
                 <TooltipContent
                     side="top"
-                    className="max-w-xs text-xs bg-neutral-900 border-white/10 text-neutral-300"
+                    className="max-w-xs text-xs bg-white border-gray-200 text-gray-600 shadow-lg"
                 >
                     {reason}
                 </TooltipContent>

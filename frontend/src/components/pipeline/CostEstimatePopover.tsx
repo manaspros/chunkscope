@@ -63,7 +63,6 @@ export function CostEstimatePopover({ open, onOpenChange }: CostEstimatePopoverP
                 total: (ingestion?.total || 0) + (query?.total || 0),
             })
         } catch {
-            // Provide estimates based on node config
             const embNode = nodes.find((n) => n.type === 'embedding')
             const llmNode = nodes.find((n) => n.type === 'llm_generation')
             const rerankerNode = nodes.find((n) => n.type === 'reranker')
@@ -100,56 +99,56 @@ export function CostEstimatePopover({ open, onOpenChange }: CostEstimatePopoverP
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="max-w-md bg-neutral-950 border-white/10 shadow-2xl">
+            <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-white">
-                        <DollarSign className="w-5 h-5 text-emerald-400" />
+                    <DialogTitle className="flex items-center gap-2 text-gray-900">
+                        <DollarSign className="w-5 h-5 text-emerald-500" />
                         Cost Estimate
                     </DialogTitle>
-                    <DialogDescription className="text-neutral-500">
+                    <DialogDescription className="text-gray-500">
                         Estimated costs per operation for your pipeline
                     </DialogDescription>
                 </DialogHeader>
 
                 {loading ? (
                     <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+                        <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
                     </div>
                 ) : estimate ? (
                     <div className="space-y-4">
                         {/* Ingestion Costs */}
-                        <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-3 space-y-2">
+                        <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 space-y-2">
                             <div className="flex items-center gap-2 mb-2">
-                                <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
-                                <span className="text-[11px] font-semibold text-neutral-300 uppercase tracking-wider">Ingestion (per document)</span>
+                                <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+                                <span className="text-[11px] font-semibold text-gray-700 uppercase tracking-wider">Ingestion (per document)</span>
                             </div>
                             <div className="space-y-1">
                                 <CostRow label="Embedding" cost={estimate.ingestion?.embedding_cost} />
                                 <CostRow label="Storage" cost={estimate.ingestion?.storage_cost} />
-                                <div className="border-t border-white/[0.06] pt-1 mt-1">
+                                <div className="border-t border-gray-200 pt-1 mt-1">
                                     <CostRow label="Subtotal" cost={estimate.ingestion?.total} bold />
                                 </div>
                             </div>
                         </div>
 
                         {/* Query Costs */}
-                        <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-3 space-y-2">
+                        <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 space-y-2">
                             <div className="flex items-center gap-2 mb-2">
-                                <Zap className="w-3.5 h-3.5 text-orange-400" />
-                                <span className="text-[11px] font-semibold text-neutral-300 uppercase tracking-wider">Query (per request)</span>
+                                <Zap className="w-3.5 h-3.5 text-orange-500" />
+                                <span className="text-[11px] font-semibold text-gray-700 uppercase tracking-wider">Query (per request)</span>
                             </div>
                             <div className="space-y-1">
                                 <CostRow label="Embedding" cost={estimate.query?.embedding_cost} />
                                 <CostRow label="LLM Generation" cost={estimate.query?.llm_cost} />
                                 <CostRow label="Reranking" cost={estimate.query?.reranking_cost} />
-                                <div className="border-t border-white/[0.06] pt-1 mt-1">
+                                <div className="border-t border-gray-200 pt-1 mt-1">
                                     <CostRow label="Subtotal" cost={estimate.query?.total} bold />
                                 </div>
                             </div>
                         </div>
 
                         {error && (
-                            <div className="flex items-center gap-2 text-[10px] text-amber-400">
+                            <div className="flex items-center gap-2 text-[10px] text-amber-600">
                                 <AlertCircle className="w-3 h-3" />
                                 Showing local estimate. Connect backend for precise costs.
                             </div>
@@ -161,7 +160,7 @@ export function CostEstimatePopover({ open, onOpenChange }: CostEstimatePopoverP
                     <Button
                         variant="outline"
                         size="sm"
-                        className="border-white/10 text-neutral-300 hover:bg-white/5"
+                        className="border-gray-200 text-gray-600 hover:bg-gray-50"
                         onClick={fetchEstimate}
                         disabled={loading}
                     >
@@ -183,8 +182,8 @@ function CostRow({ label, cost, bold }: { label: string; cost?: number; bold?: b
 
     return (
         <div className="flex justify-between items-center">
-            <span className={`text-[10px] ${bold ? 'font-semibold text-neutral-300' : 'text-neutral-500'}`}>{label}</span>
-            <span className={`text-[10px] font-mono ${isFree ? 'text-emerald-400' : bold ? 'text-white font-semibold' : 'text-neutral-300'}`}>
+            <span className={`text-[10px] ${bold ? 'font-semibold text-gray-700' : 'text-gray-500'}`}>{label}</span>
+            <span className={`text-[10px] font-mono ${isFree ? 'text-emerald-600' : bold ? 'text-gray-900 font-semibold' : 'text-gray-700'}`}>
                 {formatted}
             </span>
         </div>

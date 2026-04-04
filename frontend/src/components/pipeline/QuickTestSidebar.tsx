@@ -158,22 +158,22 @@ export function QuickTestSidebar() {
 
     return (
         <div className={cn(
-            "border-t border-white/[0.06] bg-neutral-950/90 backdrop-blur-xl transition-all duration-300 shrink-0",
+            "border-t border-gray-200 bg-white transition-all duration-300 shrink-0",
             isOpen ? "max-h-[50vh]" : "max-h-0"
         )}>
             {isOpen && (
                 <div className="flex flex-col h-full max-h-[50vh]">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.06]">
+                    <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
                         <div className="flex items-center gap-2">
-                            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                            <span className="text-[11px] font-semibold text-white">Quick Test</span>
+                            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                            <span className="text-[11px] font-semibold text-gray-900">Quick Test</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 px-2 text-[10px] text-neutral-500 hover:text-white"
+                                className="h-6 px-2 text-[10px] text-gray-500 hover:text-gray-900"
                                 onClick={() => setShowHistory(!showHistory)}
                                 disabled={history.length === 0}
                             >
@@ -183,7 +183,7 @@ export function QuickTestSidebar() {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 text-neutral-500 hover:text-white"
+                                className="h-6 w-6 p-0 text-gray-400 hover:text-gray-900"
                                 onClick={() => setIsOpen(false)}
                             >
                                 <X className="w-3.5 h-3.5" />
@@ -193,17 +193,17 @@ export function QuickTestSidebar() {
 
                     <div className="flex-1 overflow-hidden flex">
                         {/* Input area */}
-                        <div className="w-80 border-r border-white/[0.06] flex flex-col shrink-0">
+                        <div className="w-80 border-r border-gray-200 flex flex-col shrink-0">
                             <div className="p-3 flex-1 flex flex-col">
                                 <textarea
                                     ref={textareaRef}
                                     value={query}
                                     onChange={(e) => setQuery(e.target.value)}
                                     placeholder="Enter a test query..."
-                                    className="flex-1 min-h-[60px] text-[11px] px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-neutral-300 resize-none focus:outline-none focus:ring-1 focus:ring-purple-500/30 placeholder:text-neutral-600"
+                                    className="flex-1 min-h-[60px] text-[11px] px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 resize-none focus:outline-none focus:ring-1 focus:ring-purple-300 placeholder:text-gray-400"
                                 />
                                 <div className="flex items-center justify-between mt-2">
-                                    <span className="text-[9px] text-neutral-600">
+                                    <span className="text-[9px] text-gray-400">
                                         {navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl'}+Enter to test
                                     </span>
                                     <Button
@@ -224,15 +224,15 @@ export function QuickTestSidebar() {
 
                             {/* History dropdown */}
                             {showHistory && history.length > 0 && (
-                                <div className="border-t border-white/[0.06] max-h-40 overflow-auto">
+                                <div className="border-t border-gray-200 max-h-40 overflow-auto">
                                     {history.map((entry, i) => (
                                         <button
                                             key={i}
                                             onClick={() => loadFromHistory(entry)}
-                                            className="w-full text-left px-3 py-2 hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0"
+                                            className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0"
                                         >
-                                            <p className="text-[10px] text-neutral-300 truncate">{entry.query}</p>
-                                            <p className="text-[9px] text-neutral-600">
+                                            <p className="text-[10px] text-gray-700 truncate">{entry.query}</p>
+                                            <p className="text-[9px] text-gray-400">
                                                 {new Date(entry.timestamp).toLocaleTimeString()}
                                                 {entry.error ? ' - Failed' : ' - OK'}
                                             </p>
@@ -247,12 +247,12 @@ export function QuickTestSidebar() {
                             <div className="p-3">
                                 {isLoading && (
                                     <div className="space-y-3">
-                                        <Skeleton className="h-4 w-3/4 bg-white/[0.05]" />
-                                        <Skeleton className="h-20 w-full bg-white/[0.05]" />
+                                        <Skeleton className="h-4 w-3/4 bg-gray-100" />
+                                        <Skeleton className="h-20 w-full bg-gray-100" />
                                         <div className="flex gap-3">
-                                            <Skeleton className="h-8 w-24 bg-white/[0.05]" />
-                                            <Skeleton className="h-8 w-24 bg-white/[0.05]" />
-                                            <Skeleton className="h-8 w-24 bg-white/[0.05]" />
+                                            <Skeleton className="h-8 w-24 bg-gray-100" />
+                                            <Skeleton className="h-8 w-24 bg-gray-100" />
+                                            <Skeleton className="h-8 w-24 bg-gray-100" />
                                         </div>
                                     </div>
                                 )}
@@ -266,21 +266,21 @@ export function QuickTestSidebar() {
                                         {/* Answer */}
                                         <div>
                                             <div className="flex items-center gap-1.5 mb-1">
-                                                <span className="text-[10px] font-bold text-neutral-500 uppercase">Answer</span>
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase">Answer</span>
                                                 {result.confidence !== undefined && (
                                                     <span className={cn(
                                                         "text-[9px] font-mono px-1.5 py-0.5 rounded",
                                                         result.confidence >= 0.7
-                                                            ? "bg-emerald-500/10 text-emerald-400"
+                                                            ? "bg-emerald-50 text-emerald-600"
                                                             : result.confidence >= 0.4
-                                                                ? "bg-amber-500/10 text-amber-400"
-                                                                : "bg-red-500/10 text-red-400"
+                                                                ? "bg-amber-50 text-amber-600"
+                                                                : "bg-red-50 text-red-500"
                                                     )}>
                                                         {(result.confidence * 100).toFixed(0)}% confident
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-[11px] text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                                            <p className="text-[11px] text-gray-700 leading-relaxed whitespace-pre-wrap">
                                                 {result.answer || 'No answer generated'}
                                             </p>
                                         </div>
@@ -288,30 +288,30 @@ export function QuickTestSidebar() {
                                         {/* Latency & Cost */}
                                         <div className="flex flex-wrap gap-2">
                                             {result.latency.retrieval_ms !== undefined && (
-                                                <div className="flex items-center gap-1 px-2 py-1 rounded bg-white/[0.03] border border-white/[0.06]">
-                                                    <Clock className="w-2.5 h-2.5 text-blue-400" />
-                                                    <span className="text-[9px] text-neutral-500">Retrieval:</span>
-                                                    <span className="text-[9px] text-blue-400 font-mono">{result.latency.retrieval_ms}ms</span>
+                                                <div className="flex items-center gap-1 px-2 py-1 rounded bg-gray-50 border border-gray-200">
+                                                    <Clock className="w-2.5 h-2.5 text-blue-500" />
+                                                    <span className="text-[9px] text-gray-500">Retrieval:</span>
+                                                    <span className="text-[9px] text-blue-600 font-mono">{result.latency.retrieval_ms}ms</span>
                                                 </div>
                                             )}
                                             {result.latency.reranking_ms !== undefined && (
-                                                <div className="flex items-center gap-1 px-2 py-1 rounded bg-white/[0.03] border border-white/[0.06]">
-                                                    <Clock className="w-2.5 h-2.5 text-purple-400" />
-                                                    <span className="text-[9px] text-neutral-500">Reranking:</span>
-                                                    <span className="text-[9px] text-purple-400 font-mono">{result.latency.reranking_ms}ms</span>
+                                                <div className="flex items-center gap-1 px-2 py-1 rounded bg-gray-50 border border-gray-200">
+                                                    <Clock className="w-2.5 h-2.5 text-purple-500" />
+                                                    <span className="text-[9px] text-gray-500">Reranking:</span>
+                                                    <span className="text-[9px] text-purple-600 font-mono">{result.latency.reranking_ms}ms</span>
                                                 </div>
                                             )}
                                             {result.latency.generation_ms !== undefined && (
-                                                <div className="flex items-center gap-1 px-2 py-1 rounded bg-white/[0.03] border border-white/[0.06]">
-                                                    <Clock className="w-2.5 h-2.5 text-orange-400" />
-                                                    <span className="text-[9px] text-neutral-500">Generation:</span>
-                                                    <span className="text-[9px] text-orange-400 font-mono">{result.latency.generation_ms}ms</span>
+                                                <div className="flex items-center gap-1 px-2 py-1 rounded bg-gray-50 border border-gray-200">
+                                                    <Clock className="w-2.5 h-2.5 text-orange-500" />
+                                                    <span className="text-[9px] text-gray-500">Generation:</span>
+                                                    <span className="text-[9px] text-orange-600 font-mono">{result.latency.generation_ms}ms</span>
                                                 </div>
                                             )}
                                             {result.cost > 0 && (
-                                                <div className="flex items-center gap-1 px-2 py-1 rounded bg-white/[0.03] border border-white/[0.06]">
-                                                    <DollarSign className="w-2.5 h-2.5 text-emerald-400" />
-                                                    <span className="text-[9px] text-emerald-400 font-mono">${result.cost.toFixed(4)}</span>
+                                                <div className="flex items-center gap-1 px-2 py-1 rounded bg-gray-50 border border-gray-200">
+                                                    <DollarSign className="w-2.5 h-2.5 text-emerald-500" />
+                                                    <span className="text-[9px] text-emerald-600 font-mono">${result.cost.toFixed(4)}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -319,26 +319,26 @@ export function QuickTestSidebar() {
                                         {/* Source Chunks */}
                                         {result.chunks.length > 0 && (
                                             <div>
-                                                <span className="text-[10px] font-bold text-neutral-500 uppercase mb-1 block">
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">
                                                     Source Chunks ({result.chunks.length})
                                                 </span>
                                                 <div className="space-y-1">
                                                     {result.chunks.map((chunk, i) => (
                                                         <div
                                                             key={i}
-                                                            className="rounded border border-white/[0.06] bg-white/[0.02] overflow-hidden"
+                                                            className="rounded border border-gray-200 bg-gray-50 overflow-hidden"
                                                         >
                                                             <button
                                                                 onClick={() => toggleChunk(i)}
-                                                                className="w-full flex items-center justify-between px-2.5 py-1.5 hover:bg-white/[0.02]"
+                                                                className="w-full flex items-center justify-between px-2.5 py-1.5 hover:bg-gray-100"
                                                             >
                                                                 <div className="flex items-center gap-2">
-                                                                    <FileText className="w-3 h-3 text-neutral-600" />
-                                                                    <span className="text-[10px] text-neutral-400">Chunk {i + 1}</span>
+                                                                    <FileText className="w-3 h-3 text-gray-400" />
+                                                                    <span className="text-[10px] text-gray-600">Chunk {i + 1}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="flex items-center gap-1">
-                                                                        <div className="w-12 h-1 bg-neutral-800 rounded-full overflow-hidden">
+                                                                        <div className="w-12 h-1 bg-gray-200 rounded-full overflow-hidden">
                                                                             <div
                                                                                 className={cn("h-full rounded-full", scoreBg(chunk.score))}
                                                                                 style={{ width: `${chunk.score * 100}%` }}
@@ -349,15 +349,15 @@ export function QuickTestSidebar() {
                                                                         </span>
                                                                     </div>
                                                                     {expandedChunks.has(i) ? (
-                                                                        <ChevronUp className="w-3 h-3 text-neutral-600" />
+                                                                        <ChevronUp className="w-3 h-3 text-gray-400" />
                                                                     ) : (
-                                                                        <ChevronDown className="w-3 h-3 text-neutral-600" />
+                                                                        <ChevronDown className="w-3 h-3 text-gray-400" />
                                                                     )}
                                                                 </div>
                                                             </button>
                                                             {expandedChunks.has(i) && (
-                                                                <div className="px-2.5 pb-2 border-t border-white/[0.04]">
-                                                                    <p className="text-[10px] text-neutral-400 leading-relaxed mt-1.5 whitespace-pre-wrap">
+                                                                <div className="px-2.5 pb-2 border-t border-gray-200">
+                                                                    <p className="text-[10px] text-gray-600 leading-relaxed mt-1.5 whitespace-pre-wrap">
                                                                         {chunk.text}
                                                                     </p>
                                                                 </div>
@@ -380,9 +380,9 @@ export function QuickTestSidebar() {
 
                                 {!isLoading && !result && !error && (
                                     <div className="flex flex-col items-center justify-center py-8 text-center">
-                                        <Sparkles className="w-6 h-6 text-neutral-700 mb-2" />
-                                        <p className="text-[11px] text-neutral-600">Enter a query and click Test</p>
-                                        <p className="text-[9px] text-neutral-700 mt-1">Results will appear here</p>
+                                        <Sparkles className="w-6 h-6 text-gray-300 mb-2" />
+                                        <p className="text-[11px] text-gray-500">Enter a query and click Test</p>
+                                        <p className="text-[9px] text-gray-400 mt-1">Results will appear here</p>
                                     </div>
                                 )}
                             </div>
@@ -399,7 +399,7 @@ export function QuickTestToggle({ onToggle }: { onToggle: () => void }) {
         <Button
             variant="outline"
             size="sm"
-            className="h-7 px-3 text-[10px] border-white/[0.06] text-neutral-400 hover:text-white hover:bg-white/5"
+            className="h-7 px-3 text-[10px] border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
             onClick={onToggle}
         >
             <Sparkles className="w-3 h-3 mr-1" />

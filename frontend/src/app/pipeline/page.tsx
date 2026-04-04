@@ -175,12 +175,23 @@ function LoadButton() {
     )
 }
 
+function buildTechniques(techniques: any[]): { name: string; is_primary: boolean; confidence: number; reasoning: string; enabled: boolean }[] {
+    if (!techniques || !Array.isArray(techniques)) return []
+    return techniques.map((t: any) => ({
+        name: t.name || '',
+        is_primary: !!t.is_primary,
+        confidence: t.confidence || 0,
+        reasoning: t.reasoning || '',
+        enabled: true,
+    }))
+}
+
 function buildNodesFromRecommendation(rec: any): { nodes: Node[]; edges: Edge[] } {
     const newNodes: Node[] = []
     const newEdges: Edge[] = []
     let x = 100
     const y = 200
-    const spacing = 280
+    const spacing = 320 // wider spacing for technique-rich nodes
 
     // Document upload node
     const docNodeId = `document_upload-${Date.now()}`
@@ -194,9 +205,10 @@ function buildNodesFromRecommendation(rec: any): { nodes: Node[]; edges: Edge[] 
     let prevId = docNodeId
     x += spacing
 
-    // Chunking node from primary technique
-    const primaryChunking = rec.chunking?.find((t: any) => t.is_primary) || rec.chunking?.[0]
-    if (primaryChunking) {
+    // Chunking node with ALL techniques
+    const chunkingTechniques = rec.chunking || []
+    if (chunkingTechniques.length > 0) {
+        const primaryChunking = chunkingTechniques.find((t: any) => t.is_primary) || chunkingTechniques[0]
         const nodeId = `chunking-${Date.now()}`
         const def = getNodeDef('chunking')
         newNodes.push({
@@ -207,6 +219,7 @@ function buildNodesFromRecommendation(rec: any): { nodes: Node[]; edges: Edge[] 
                 ...(def?.defaultConfig || {}),
                 method: primaryChunking.name || 'recursive',
                 ...(primaryChunking.config || {}),
+                techniques: buildTechniques(chunkingTechniques),
             },
         })
         newEdges.push({
@@ -229,6 +242,9 @@ function buildNodesFromRecommendation(rec: any): { nodes: Node[]; edges: Edge[] 
     }
     if (rec.embedding?.config) {
         Object.assign(embData, rec.embedding.config)
+    }
+    if (rec.embedding) {
+        embData.techniques = buildTechniques([rec.embedding])
     }
     newNodes.push({
         id: embNodeId,
@@ -265,9 +281,10 @@ function buildNodesFromRecommendation(rec: any): { nodes: Node[]; edges: Edge[] 
     prevId = vsNodeId
     x += spacing
 
-    // Retriever node from primary retrieval technique
-    const primaryRetrieval = rec.retrieval?.find((t: any) => t.is_primary) || rec.retrieval?.[0]
-    if (primaryRetrieval) {
+    // Retriever node with ALL retrieval techniques
+    const retrievalTechniques = rec.retrieval || []
+    if (retrievalTechniques.length > 0) {
+        const primaryRetrieval = retrievalTechniques.find((t: any) => t.is_primary) || retrievalTechniques[0]
         const nodeId = `retriever-${Date.now()}`
         const def = getNodeDef('retriever')
         newNodes.push({
@@ -278,6 +295,7 @@ function buildNodesFromRecommendation(rec: any): { nodes: Node[]; edges: Edge[] 
                 ...(def?.defaultConfig || {}),
                 strategy: primaryRetrieval.name || 'dense',
                 ...(primaryRetrieval.config || {}),
+                techniques: buildTechniques(retrievalTechniques),
             },
         })
         newEdges.push({
@@ -291,9 +309,10 @@ function buildNodesFromRecommendation(rec: any): { nodes: Node[]; edges: Edge[] 
         x += spacing
     }
 
-    // Reranker node from primary reranking technique
-    const primaryReranking = rec.reranking?.find((t: any) => t.is_primary) || rec.reranking?.[0]
-    if (primaryReranking) {
+    // Reranker node with ALL reranking techniques
+    const rerankingTechniques = rec.reranking || []
+    if (rerankingTechniques.length > 0) {
+        const primaryReranking = rerankingTechniques.find((t: any) => t.is_primary) || rerankingTechniques[0]
         const nodeId = `reranker-${Date.now()}`
         const def = getNodeDef('reranker')
         newNodes.push({
@@ -304,6 +323,7 @@ function buildNodesFromRecommendation(rec: any): { nodes: Node[]; edges: Edge[] 
                 ...(def?.defaultConfig || {}),
                 provider: primaryReranking.name || 'cross-encoder',
                 ...(primaryReranking.config || {}),
+                techniques: buildTechniques(rerankingTechniques),
             },
         })
         newEdges.push({

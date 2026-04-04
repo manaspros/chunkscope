@@ -140,7 +140,7 @@ export function PipelineHealth() {
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <button className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/[0.04] transition-colors">
+                    <button className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-100 transition-colors">
                         <span className="relative flex h-2 w-2">
                             <span className={cn(
                                 "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
@@ -151,7 +151,7 @@ export function PipelineHealth() {
                                 DOT_COLORS[level]
                             )} />
                         </span>
-                        <span className="text-[9px] text-neutral-500 font-medium">
+                        <span className="text-[9px] text-gray-500 font-medium">
                             {level === 'green' ? 'Healthy' : level === 'yellow' ? 'Warnings' : 'Issues'}
                         </span>
                     </button>
@@ -159,10 +159,10 @@ export function PipelineHealth() {
                 <TooltipContent
                     side="bottom"
                     align="start"
-                    className="max-w-xs p-0 bg-neutral-900 border-white/10 overflow-hidden"
+                    className="max-w-xs p-0 bg-white border-gray-200 shadow-lg overflow-hidden"
                 >
-                    <div className="px-3 py-2 border-b border-white/[0.06]">
-                        <span className="text-[10px] font-bold text-neutral-400 uppercase">Pipeline Health</span>
+                    <div className="px-3 py-2 border-b border-gray-100">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase">Pipeline Health</span>
                     </div>
                     <div className="px-3 py-2 space-y-1.5 max-h-48 overflow-auto">
                         {checks.map((check, i) => (
@@ -172,8 +172,7 @@ export function PipelineHealth() {
                                     DOT_COLORS[check.level]
                                 )} />
                                 <span className={cn(
-                                    "text-[10px] leading-relaxed",
-                                    CHECK_ICONS[check.level]
+                                    "text-[10px] leading-relaxed text-gray-600",
                                 )}>
                                     {check.message}
                                 </span>

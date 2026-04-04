@@ -45,10 +45,8 @@ export function BottomBar() {
         setExecutionError(null)
 
         try {
-            // Set all nodes to running sequentially based on topological order
             const config = buildPipelineConfig(nodes, edges)
 
-            // Create pipeline
             const createResponse = await apiClient.post('/api/v1/pipelines/', {
                 name: pipelineName,
                 config,
@@ -56,12 +54,9 @@ export function BottomBar() {
 
             const pipelineId = createResponse?.data?.id || createResponse?.data?.pipeline_id
 
-            // Execute pipeline (simulate node-by-node progress)
-            // First, get execution order from edges
             const executed = new Set<string>()
             const nodeMap = new Map(nodes.map((n) => [n.id, n]))
 
-            // Find nodes with no incoming edges (source nodes)
             const incomingEdgeCount = new Map<string, number>()
             nodes.forEach((n) => incomingEdgeCount.set(n.id, 0))
             edges.forEach((e) => {
@@ -71,18 +66,15 @@ export function BottomBar() {
 
             const queue = nodes.filter((n) => (incomingEdgeCount.get(n.id) || 0) === 0).map((n) => n.id)
 
-            // Process nodes
             while (queue.length > 0) {
                 const nodeId = queue.shift()!
                 if (executed.has(nodeId)) continue
 
                 setNodeExecutionState(nodeId, 'running')
 
-                // Simulate execution delay
                 await new Promise((r) => setTimeout(r, 800))
 
                 try {
-                    // Try to execute the step via API
                     if (pipelineId) {
                         const stepResult = await apiClient.post(`/api/v1/pipelines/${pipelineId}/execute-step`, {
                             node_id: nodeId,
@@ -102,7 +94,6 @@ export function BottomBar() {
                     setNodeExecutionState(nodeId, 'complete')
                     executed.add(nodeId)
 
-                    // Enqueue downstream nodes
                     edges
                         .filter((e) => e.source === nodeId)
                         .forEach((e) => {
@@ -118,7 +109,6 @@ export function BottomBar() {
                 }
             }
 
-            // Handle any disconnected nodes
             nodes.forEach((n) => {
                 if (!executed.has(n.id)) {
                     setNodeExecutionState(n.id, 'complete')
@@ -138,13 +128,13 @@ export function BottomBar() {
             {/* Quick Test Sidebar (collapsible above bottom bar) */}
             {showQuickTest && <QuickTestSidebar />}
 
-            <div className="h-12 border-t border-white/[0.06] bg-neutral-950/80 backdrop-blur-xl flex items-center px-4 gap-2 shrink-0">
+            <div className="h-12 border-t border-gray-200 bg-white flex items-center px-4 gap-2 shrink-0">
                 {/* Left: Quick actions */}
                 <div className="flex items-center gap-1.5">
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2 text-neutral-500 hover:text-white disabled:opacity-30"
+                        className="h-7 px-2 text-gray-400 hover:text-gray-900 disabled:opacity-30"
                         onClick={undo}
                         disabled={history.length === 0}
                         title="Undo (Ctrl+Z)"
@@ -154,18 +144,18 @@ export function BottomBar() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2 text-neutral-500 hover:text-white disabled:opacity-30"
+                        className="h-7 px-2 text-gray-400 hover:text-gray-900 disabled:opacity-30"
                         onClick={redo}
                         disabled={future.length === 0}
                         title="Redo (Ctrl+Shift+Z)"
                     >
                         <Redo2 className="w-3.5 h-3.5" />
                     </Button>
-                    <div className="w-px h-5 bg-white/[0.06] mx-1" />
+                    <div className="w-px h-5 bg-gray-200 mx-1" />
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2 text-neutral-500 hover:text-red-400"
+                        className="h-7 px-2 text-gray-400 hover:text-red-500"
                         onClick={clearCanvas}
                         disabled={nodes.length === 0}
                         title="Clear canvas"
@@ -177,16 +167,16 @@ export function BottomBar() {
                 {/* Center: Cost ticker + node count */}
                 <div className="flex-1 flex items-center justify-center gap-3">
                     <CostTicker />
-                    <span className="text-[10px] text-neutral-600">
+                    <span className="text-[10px] text-gray-400">
                         {nodes.length} node{nodes.length !== 1 ? 's' : ''} / {edges.length} connection{edges.length !== 1 ? 's' : ''}
                     </span>
                     {executionError && (
-                        <span className="text-[10px] text-red-400 flex items-center gap-1">
+                        <span className="text-[10px] text-red-500 flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" /> {executionError}
                         </span>
                     )}
                     {executionComplete && !executionError && (
-                        <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                        <span className="text-[10px] text-emerald-600 flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> Pipeline executed successfully
                         </span>
                     )}
@@ -198,7 +188,7 @@ export function BottomBar() {
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 px-3 text-[10px] border-white/[0.06] text-neutral-400 hover:text-white hover:bg-white/5"
+                        className="h-7 px-3 text-[10px] border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                         onClick={() => setShowCost(true)}
                         disabled={nodes.length === 0}
                     >
@@ -208,7 +198,7 @@ export function BottomBar() {
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 px-3 text-[10px] border-white/[0.06] text-neutral-400 hover:text-white hover:bg-white/5"
+                        className="h-7 px-3 text-[10px] border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                         onClick={() => setShowExport(true)}
                         disabled={nodes.length === 0}
                     >

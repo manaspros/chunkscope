@@ -120,8 +120,8 @@ export function ErrorDiagnostic({ diagnostic, className, compact = false }: Erro
             {/* Why it happened */}
             <div className={cn("px-3 py-2 border-b border-red-500/10 bg-red-500/[0.02]", compact && "py-1.5")}>
                 <div className="flex items-start gap-2">
-                    <HelpCircle className={cn("shrink-0 text-neutral-500 mt-0.5", compact ? "w-3 h-3" : "w-3.5 h-3.5")} />
-                    <p className={cn("text-neutral-400 leading-relaxed", compact ? "text-[9px]" : "text-[10px]")}>
+                    <HelpCircle className={cn("shrink-0 text-gray-500 mt-0.5", compact ? "w-3 h-3" : "w-3.5 h-3.5")} />
+                    <p className={cn("text-gray-500 leading-relaxed", compact ? "text-[9px]" : "text-[10px]")}>
                         {diagnostic.why}
                     </p>
                 </div>
@@ -132,7 +132,7 @@ export function ErrorDiagnostic({ diagnostic, className, compact = false }: Erro
                 <div className="flex items-start gap-2">
                     <Wrench className={cn("shrink-0 text-amber-400 mt-0.5", compact ? "w-3 h-3" : "w-3.5 h-3.5")} />
                     <div className="flex-1">
-                        <p className={cn("text-neutral-300 leading-relaxed", compact ? "text-[9px]" : "text-[10px]")}>
+                        <p className={cn("text-gray-700 leading-relaxed", compact ? "text-[9px]" : "text-[10px]")}>
                             {diagnostic.fix}
                         </p>
                         {diagnostic.canAutoFix && diagnostic.fixAction && (

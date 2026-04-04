@@ -94,13 +94,13 @@ export function CodeExportModal({ open, onOpenChange }: CodeExportModalProps) {
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="max-w-3xl bg-neutral-950 border-white/10 shadow-2xl">
+            <DialogContent className="max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-white">
-                        <Code2 className="w-5 h-5 text-purple-400" />
+                    <DialogTitle className="flex items-center gap-2 text-gray-900">
+                        <Code2 className="w-5 h-5 text-purple-600" />
                         Export Pipeline Code
                     </DialogTitle>
-                    <DialogDescription className="text-neutral-500">
+                    <DialogDescription className="text-gray-500">
                         Generated code for your pipeline configuration
                     </DialogDescription>
                 </DialogHeader>
@@ -109,22 +109,22 @@ export function CodeExportModal({ open, onOpenChange }: CodeExportModalProps) {
                 <div className="flex items-center gap-2">
                     <Badge
                         variant={language === 'python' ? 'default' : 'outline'}
-                        className={language === 'python' ? 'bg-purple-600 cursor-pointer' : 'cursor-pointer text-neutral-400 border-white/10'}
+                        className={language === 'python' ? 'bg-purple-600 cursor-pointer' : 'cursor-pointer text-gray-500 border-gray-200'}
                         onClick={() => { setLanguage('python'); setCode(''); }}
                     >
                         Python
                     </Badge>
                     <Badge
                         variant={language === 'typescript' ? 'default' : 'outline'}
-                        className={language === 'typescript' ? 'bg-blue-600 cursor-pointer' : 'cursor-pointer text-neutral-400 border-white/10'}
+                        className={language === 'typescript' ? 'bg-blue-600 cursor-pointer' : 'cursor-pointer text-gray-500 border-gray-200'}
                         onClick={() => { setLanguage('typescript'); setCode(''); }}
                     >
                         TypeScript
                     </Badge>
                 </div>
 
-                {/* Code block */}
-                <div className="relative rounded-lg bg-black/60 border border-white/[0.06] overflow-hidden">
+                {/* Code block -- intentionally dark for code readability */}
+                <div className="relative rounded-lg bg-gray-900 border border-gray-200 overflow-hidden">
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
                             <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
@@ -135,7 +135,7 @@ export function CodeExportModal({ open, onOpenChange }: CodeExportModalProps) {
                                 <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="h-7 px-2 text-[10px] text-neutral-400 hover:text-white hover:bg-white/10"
+                                    className="h-7 px-2 text-[10px] text-gray-400 hover:text-white hover:bg-white/10"
                                     onClick={handleCopy}
                                 >
                                     {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
@@ -143,14 +143,14 @@ export function CodeExportModal({ open, onOpenChange }: CodeExportModalProps) {
                                 </Button>
                             </div>
                             <pre className="p-4 overflow-auto max-h-[400px] text-[11px] leading-relaxed">
-                                <code className="text-neutral-300 font-mono">{code || '# Click generate to see code'}</code>
+                                <code className="text-gray-300 font-mono">{code || '# Click generate to see code'}</code>
                             </pre>
                         </>
                     )}
                 </div>
 
                 {error && (
-                    <p className="text-[11px] text-red-400">{error}</p>
+                    <p className="text-[11px] text-red-500">{error}</p>
                 )}
 
                 {/* Actions */}
@@ -158,7 +158,7 @@ export function CodeExportModal({ open, onOpenChange }: CodeExportModalProps) {
                     <Button
                         variant="outline"
                         size="sm"
-                        className="border-white/10 text-neutral-300 hover:bg-white/5"
+                        className="border-gray-200 text-gray-600 hover:bg-gray-50"
                         onClick={generateCode}
                         disabled={loading}
                     >
@@ -168,7 +168,7 @@ export function CodeExportModal({ open, onOpenChange }: CodeExportModalProps) {
                     <Button
                         variant="outline"
                         size="sm"
-                        className="border-white/10 text-neutral-300 hover:bg-white/5"
+                        className="border-gray-200 text-gray-600 hover:bg-gray-50"
                         onClick={handleDownloadZip}
                     >
                         <Download className="w-3 h-3 mr-1.5" />
