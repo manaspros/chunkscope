@@ -210,13 +210,17 @@ const TechniqueNode = memo(function TechniqueNode({ data }: NodeProps) {
                 </p>
             </div>
 
-            {/* Tooltip with full reasoning */}
+            {/* Tooltip with full reasoning - renders ABOVE the card to avoid clipping */}
             {showTooltip && reasoning && (
-                <div className="absolute z-50 left-0 top-full mt-1 w-64 p-3 bg-gray-900 text-white text-[10px] leading-relaxed rounded-lg shadow-xl pointer-events-none">
+                <div
+                    className="absolute left-0 bottom-full mb-2 w-72 p-3 bg-gray-900 text-white text-[10px] leading-relaxed rounded-lg shadow-xl pointer-events-none"
+                    style={{ zIndex: 9999 }}
+                >
                     <div className="font-bold mb-1 text-gray-200">
                         {(name || '').replace(/_/g, ' ')} - {is_primary ? 'Primary' : 'Augment'}
                     </div>
                     {reasoning}
+                    <div className="absolute left-6 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-gray-900" />
                 </div>
             )}
         </div>
@@ -415,7 +419,7 @@ export function PipelineFlow({ recommendation, onBuildPipeline }: Props) {
             </div>
 
             {/* Flow diagram */}
-            <div className="h-[500px] bg-gray-50 border-t border-b border-gray-100">
+            <div className="h-[500px] bg-gray-50 border-t border-b border-gray-100" style={{ overflow: 'visible' }}>
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
@@ -424,7 +428,7 @@ export function PipelineFlow({ recommendation, onBuildPipeline }: Props) {
                     fitViewOptions={{ padding: 0.2 }}
                     nodesConnectable={false}
                     nodesDraggable={true}
-                    elementsSelectable={false}
+                    elementsSelectable={true}
                     panOnScroll
                     proOptions={{ hideAttribution: true }}
                 >
