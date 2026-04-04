@@ -16,10 +16,11 @@ const PipelineBuilder = dynamic(
     }
 )
 import { usePipelineStore } from '@/stores/usePipelineStore'
-import { ArrowLeft, Save, FolderOpen, Loader2, Check, Wand2, Search } from 'lucide-react'
+import { ArrowLeft, Save, FolderOpen, Loader2, Check, Wand2, Search, CheckCircle2, MessageSquare, Code2, FlaskConical } from 'lucide-react'
+import { TesterPanel } from '@/components/pipeline/TesterPanel'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { apiClient } from '@/lib/api'
+import { apiClient, projectsApi } from '@/lib/api'
 import { buildPipelineConfig, getNodeDef } from '@/lib/pipeline-nodes'
 import { PipelineHealth } from '@/components/pipeline/PipelineHealth'
 import { PipelineWizard } from '@/components/pipeline/PipelineWizard'
@@ -67,6 +68,7 @@ function SaveButton() {
     const nodes = usePipelineStore((s) => s.nodes)
     const edges = usePipelineStore((s) => s.edges)
     const pipelineName = usePipelineStore((s) => s.pipelineName)
+    const projectId = usePipelineStore((s) => s.projectId)
     const pipelineId = usePipelineStore((s) => s.pipelineId)
     const setPipelineId = usePipelineStore((s) => s.setPipelineId)
 
@@ -85,6 +87,7 @@ function SaveButton() {
             } else {
                 const res = await apiClient.post('/api/v1/pipelines/', {
                     name: pipelineName,
+                    project_id: projectId || undefined,
                     config,
                 })
                 setPipelineId(res.data?.id || res.data?.pipeline_id || null)
@@ -100,7 +103,7 @@ function SaveButton() {
         } finally {
             setSaving(false)
         }
-    }, [nodes, edges, pipelineName, pipelineId, setPipelineId])
+    }, [nodes, edges, pipelineName, projectId, pipelineId, setPipelineId])
 
     return (
         <Button
@@ -122,58 +125,6 @@ function SaveButton() {
     )
 }
 
-function LoadButton() {
-    const setNodes = usePipelineStore((s) => s.setNodes)
-    const setEdges = usePipelineStore((s) => s.setEdges)
-    const setPipelineName = usePipelineStore((s) => s.setPipelineName)
-    const [loading, setLoading] = useState(false)
-
-    const handleLoad = useCallback(async () => {
-        setLoading(true)
-        try {
-            // Try to load from localStorage
-            const saved = localStorage.getItem('chunkscope_pipeline')
-            if (saved) {
-                const parsed = JSON.parse(saved)
-                if (parsed.config?.steps) {
-                    const restoredNodes = parsed.config.steps.map((step: any) => ({
-                        id: step.id,
-                        type: step.type,
-                        position: step.position || { x: 0, y: 0 },
-                        data: step.config,
-                    }))
-                    const restoredEdges = (parsed.config.connections || []).map((c: any, i: number) => ({
-                        id: `e-${c.source}-${c.target}-${i}`,
-                        source: c.source,
-                        target: c.target,
-                        animated: true,
-                        style: { stroke: '#6366f1', strokeWidth: 2 },
-                    }))
-                    setNodes(restoredNodes)
-                    setEdges(restoredEdges)
-                    if (parsed.name) setPipelineName(parsed.name)
-                }
-            }
-        } catch {
-            // ignore
-        } finally {
-            setLoading(false)
-        }
-    }, [setNodes, setEdges, setPipelineName])
-
-    return (
-        <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2.5 text-[10px] text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-            onClick={handleLoad}
-            disabled={loading}
-        >
-            <FolderOpen className="w-3.5 h-3.5" />
-            <span className="ml-1.5">Load</span>
-        </Button>
-    )
-}
 
 function buildTechniques(techniques: any[]): { name: string; is_primary: boolean; confidence: number; reasoning: string; enabled: boolean }[] {
     if (!techniques || !Array.isArray(techniques)) return []
@@ -362,17 +313,31 @@ function PipelinePageInner() {
     const projectId = searchParams.get('projectId')
 
     const isExecuting = usePipelineStore((s) => s.isExecuting)
+    const executionResult = usePipelineStore((s) => s.executionResult)
+    const nodes = usePipelineStore((s) => s.nodes)
+    const storeProjectId = usePipelineStore((s) => s.projectId)
     const setNodes = usePipelineStore((s) => s.setNodes)
     const setEdges = usePipelineStore((s) => s.setEdges)
     const setPipelineName = usePipelineStore((s) => s.setPipelineName)
+    const setProjectId = usePipelineStore((s) => s.setProjectId)
     const saveHistory = usePipelineStore((s) => s.saveHistory)
 
     const [wizardOpen, setWizardOpen] = useState(false)
-    const [testQuery, setTestQuery] = useState('')
-    const [queryResults, setQueryResults] = useState<any[] | null>(null)
-    const [querying, setQuerying] = useState(false)
+    const testerOpen = usePipelineStore((s) => s.testerOpen)
+    const setTesterOpen = usePipelineStore((s) => s.setTesterOpen)
 
-    // Load recommendation from localStorage when projectId is in URL
+    // Sync projectId from URL into store. If project changed, clear stale execution state
+    useEffect(() => {
+        if (projectId && storeProjectId && projectId !== storeProjectId) {
+            // Different project — clear old execution state
+            usePipelineStore.getState().resetExecution()
+            usePipelineStore.getState().setExecutionResult(null)
+        }
+        setProjectId(projectId || null)
+    }, [projectId, storeProjectId, setProjectId])
+
+    // Load recommendation from localStorage ONLY if it's a fresh "Build Pipeline" click
+    // Skip if store already has nodes for this project (e.g. on refresh or back-navigation)
     useEffect(() => {
         if (!projectId) return
         const stored = localStorage.getItem('pipeline_recommendation')
@@ -382,13 +347,19 @@ function PipelinePageInner() {
             const data = JSON.parse(stored)
             if (data.projectId !== projectId) return
 
+            // If store already has nodes for this same project, skip rebuilding
+            if (nodes.length > 0 && storeProjectId === projectId) {
+                localStorage.removeItem('pipeline_recommendation')
+                return
+            }
+
             const rec = data.recommendation
             if (!rec) return
 
             saveHistory()
-            const { nodes, edges } = buildNodesFromRecommendation(rec)
-            setNodes(nodes)
-            setEdges(edges)
+            const built = buildNodesFromRecommendation(rec)
+            setNodes(built.nodes)
+            setEdges(built.edges)
 
             // Name the pipeline from content profile or project
             const domain = data.contentProfile?.domain || 'AI'
@@ -399,23 +370,7 @@ function PipelinePageInner() {
         } catch (e) {
             console.error('Failed to load pipeline recommendation:', e)
         }
-    }, [projectId, setNodes, setEdges, setPipelineName, saveHistory])
-
-    const handleTestQuery = useCallback(async () => {
-        if (!testQuery.trim() || !projectId) return
-        setQuerying(true)
-        try {
-            const result = await apiClient.post('/api/v1/query/', {
-                query: testQuery,
-                top_k: 5,
-            }).then(r => r.data)
-            setQueryResults(result.results || [])
-        } catch {
-            setQueryResults(null)
-        } finally {
-            setQuerying(false)
-        }
-    }, [testQuery, projectId])
+    }, [projectId, storeProjectId, nodes.length, setNodes, setEdges, setPipelineName, saveHistory])
 
     const backHref = projectId ? `/projects/${projectId}` : '/dashboard'
 
@@ -460,7 +415,6 @@ function PipelinePageInner() {
                         <Wand2 className="w-3.5 h-3.5" />
                         <span className="ml-1.5">New Pipeline</span>
                     </Button>
-                    <LoadButton />
                     <SaveButton />
                 </div>
             </header>
@@ -470,38 +424,9 @@ function PipelinePageInner() {
                 <PipelineBuilder />
             </main>
 
-            {/* Query Testing */}
+            {/* Tester Panel Slide-out */}
             {projectId && (
-                <div className="relative z-20 p-4 border-t border-gray-200 bg-white shrink-0">
-                    <h3 className="text-sm font-bold text-gray-700 mb-2">Test Query</h3>
-                    <div className="flex gap-2">
-                        <input
-                            value={testQuery}
-                            onChange={(e) => setTestQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleTestQuery()}
-                            placeholder="Ask a question about your data..."
-                            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
-                        />
-                        <button
-                            onClick={handleTestQuery}
-                            disabled={querying || !testQuery.trim()}
-                            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-bold disabled:opacity-40 hover:bg-gray-800 transition-colors"
-                        >
-                            {querying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-                            Test
-                        </button>
-                    </div>
-                    {queryResults && queryResults.length > 0 && (
-                        <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
-                            {queryResults.map((r: any, i: number) => (
-                                <div key={i} className="p-3 rounded-lg bg-gray-50 border border-gray-200">
-                                    <p className="text-xs text-gray-700">{(r.text || r.content || '').substring(0, 200)}...</p>
-                                    <span className="text-[10px] text-gray-400">Score: {(r.score ?? r.relevance_score ?? 0).toFixed(3)}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <TesterPanel projectId={projectId} open={testerOpen} onClose={() => setTesterOpen(false)} />
             )}
 
             {/* Pipeline Wizard */}

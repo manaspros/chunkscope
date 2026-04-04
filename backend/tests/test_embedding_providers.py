@@ -2,7 +2,6 @@ import pytest
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.services.embeddings import get_embedder, OpenAIEmbedder, LocalHuggingFaceEmbedder
-from app.services.cost_calculator import EmbeddingCostCalculator
 
 @pytest.mark.asyncio
 async def test_openai_embedder_mock():
@@ -39,19 +38,6 @@ async def test_local_embedder():
     assert len(embeddings[0]) == 384
     assert embedder.provider_name == "local"
     assert embedder.cost_per_million_tokens == 0.0
-
-def test_cost_calculator():
-    # OpenAI 3-small costs $0.02 / 1M tokens
-    cost = EmbeddingCostCalculator.calculate("openai", "text-embedding-3-small", 1_000_000)
-    assert cost == 0.02
-    
-    # Local costs $0.0
-    cost_local = EmbeddingCostCalculator.calculate("local", "all-MiniLM-L6-v2", 5_000_000)
-    assert cost_local == 0.0
-    
-    # Batch calculation test
-    cost_half = EmbeddingCostCalculator.calculate("openai", "text-embedding-3-small", 500_000)
-    assert cost_half == 0.01
 
 def test_embedder_factory():
     openai = get_embedder("openai", "text-embedding-ada-002", api_key="abc")

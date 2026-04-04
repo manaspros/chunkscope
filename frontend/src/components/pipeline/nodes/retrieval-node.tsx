@@ -23,10 +23,10 @@ export function RetrievalNode({ data, selected }: any) {
                         defaultValue={data.retrieval_method || "semantic"}
                         onValueChange={(val) => data.onChange?.({ ...data, retrieval_method: val })}
                     >
-                        <SelectTrigger className="h-8 bg-black/40 border-white/5 text-xs">
+                        <SelectTrigger className="h-8 bg-gray-50 border-gray-200 text-xs">
                             <SelectValue placeholder="Type" />
                         </SelectTrigger>
-                        <SelectContent className="bg-neutral-900 border-white/10 text-white text-xs">
+                        <SelectContent className="bg-white border-gray-200 text-gray-900 text-xs">
                             <SelectItem value="semantic">Semantic (Vector)</SelectItem>
                             <SelectItem value="keyword">Keyword (BM25)</SelectItem>
                             <SelectItem value="hybrid">Hybrid</SelectItem>
@@ -84,16 +84,16 @@ export function RetrievalNode({ data, selected }: any) {
                     </div>
                 )}
 
-                <div className="flex flex-col gap-1.5 border-t border-white/5 pt-3 mt-1">
+                <div className="flex flex-col gap-1.5 border-t border-gray-200 pt-3 mt-1">
                     <Label className="text-[10px] uppercase text-cyan-500/80 font-bold">Query Augmentation</Label>
                     <Select
                         defaultValue={data.augmentation_method || "none"}
                         onValueChange={(val) => data.onChange?.({ ...data, augmentation_method: val === "none" ? null : val })}
                     >
-                        <SelectTrigger className="h-8 bg-black/40 border-white/5 text-xs">
+                        <SelectTrigger className="h-8 bg-gray-50 border-gray-200 text-xs">
                             <SelectValue placeholder="None" />
                         </SelectTrigger>
-                        <SelectContent className="bg-neutral-900 border-white/10 text-white text-xs">
+                        <SelectContent className="bg-white border-gray-200 text-gray-900 text-xs">
                             <SelectItem value="none">None</SelectItem>
                             <SelectItem value="multi_query">Multi-Query (RRF)</SelectItem>
                             <SelectItem value="hyde">HyDE (Hypothetical)</SelectItem>
@@ -122,11 +122,11 @@ export function RetrievalNode({ data, selected }: any) {
 
             {/* Results Display for Augmentations */}
             {data.augmentations && data.augmentations.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-white/10">
+                <div className="mt-2 pt-2 border-t border-gray-200">
                     <Label className="text-[10px] uppercase text-green-500 font-bold mb-1 block">Generated Variants</Label>
                     <div className="flex flex-col gap-1">
                         {data.augmentations.map((variant: string, idx: number) => (
-                            <div key={idx} className="bg-white/5 p-1.5 rounded text-[10px] font-mono text-neutral-300 border border-white/5">
+                            <div key={idx} className="bg-gray-50 p-1.5 rounded text-[10px] font-mono text-gray-700 border border-gray-200">
                                 {variant}
                             </div>
                         ))}

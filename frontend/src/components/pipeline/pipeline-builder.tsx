@@ -38,7 +38,6 @@ function PipelineBuilderInner() {
         retriever: PipelineNode,
         reranker: PipelineNode,
         llm_generation: PipelineNode,
-        evaluation: PipelineNode,
     }), [])
 
     const onDragOver = useCallback((event: React.DragEvent) => {

@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 from uuid import UUID
 import numpy as np
 from sqlalchemy import select, text
-from app.models import Chunk
+from app.models import Chunk, Document
 from app.services.retrievers.base import BaseRetriever
 from app.dependencies import DbSession
 
@@ -22,10 +22,11 @@ class MMRRetriever(BaseRetriever):
         self.lambda_mult = lambda_mult
 
     async def retrieve(
-        self, 
-        query: str, 
-        top_k: int = 5, 
+        self,
+        query: str,
+        top_k: int = 5,
         document_id: UUID = None,
+        project_id: UUID = None,
         query_embedding: List[float] = None,
         fetch_k: int = 20,
         **kwargs
@@ -33,23 +34,26 @@ class MMRRetriever(BaseRetriever):
         """Perform MMR retrieval."""
         if not query_embedding:
             return []
-            
+
         lambda_mult = kwargs.get("lambda_mult", self.lambda_mult)
-        
+
         # 1. Fetch more candidates than needed
         embedding_str = f"[{','.join(map(str, query_embedding))}]"
-        
+
         stmt = (
             select(
                 Chunk,
                 (1 - Chunk.embedding.cosine_distance(text(f"'{embedding_str}'::vector"))).label("score")
             )
+            .where(Chunk.embedding.isnot(None))
             .order_by(text("score DESC"))
             .limit(fetch_k)
         )
-        
+
         if document_id:
             stmt = stmt.where(Chunk.document_id == document_id)
+        elif project_id:
+            stmt = stmt.join(Document, Chunk.document_id == Document.id).where(Document.project_id == project_id)
             
         result = await self.db.execute(stmt)
         candidates = result.all()

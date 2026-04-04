@@ -4,7 +4,7 @@ CRUD operations and file management for projects
 """
 import pathlib
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -514,7 +514,7 @@ async def analyze_project(
         "reasoning": reasoning,
         "pipeline_recommendation": pipeline_rec,
         "files": file_results,
-        "analyzed_at": datetime.utcnow().isoformat(),
+        "analyzed_at": datetime.now(timezone.utc).isoformat(),
     }
 
     db.add(project)
@@ -705,7 +705,7 @@ async def ai_analyze_project(
         "doc_type": dominant_type,
         "corpus_size": corpus_size,
         "recommendation": recommendation.to_dict(),
-        "analyzed_at": datetime.utcnow().isoformat(),
+        "analyzed_at": datetime.now(timezone.utc).isoformat(),
     }
     db.add(project)
     await db.flush()
@@ -851,6 +851,36 @@ async def chunk_project(
     }
 
 
+@router.get("/{project_id}/chunk-status")
+async def get_project_chunk_status(
+    project_id: UUID,
+    db: DbSession,
+):
+    """Check if chunks and embeddings exist for a project."""
+    project = await _get_project(db, project_id)
+
+    chunk_count_q = (
+        select(func.count(Chunk.id))
+        .join(Document, Chunk.document_id == Document.id)
+        .where(Document.project_id == project_id)
+    )
+    total_chunks = (await db.execute(chunk_count_q)).scalar() or 0
+
+    embedded_count_q = (
+        select(func.count(Chunk.id))
+        .join(Document, Chunk.document_id == Document.id)
+        .where(Document.project_id == project_id, Chunk.embedding.isnot(None))
+    )
+    embedded_chunks = (await db.execute(embedded_count_q)).scalar() or 0
+
+    return {
+        "project_id": str(project_id),
+        "total_chunks": total_chunks,
+        "embedded_chunks": embedded_chunks,
+        "is_complete": total_chunks > 0 and embedded_chunks > 0,
+    }
+
+
 @router.get("/{project_id}/chunks")
 async def get_project_chunks(
     project_id: UUID,
@@ -901,3 +931,226 @@ async def get_project_chunks(
         "page": page,
         "per_page": per_page,
     }
+
+
+@router.get("/{project_id}/sample-queries")
+async def get_sample_queries(
+    project_id: UUID,
+    db: DbSession,
+):
+    """Generate sample queries from project content and metadata."""
+    project = await _get_project(db, project_id)
+
+    queries = []
+
+    # 1. From content profile (if AI analysis was done)
+    if project.content_profile:
+        profile = project.content_profile
+        domain = profile.get("domain", "")
+        query_types = profile.get("typical_query_types", [])
+        if query_types:
+            for qt in query_types[:3]:
+                queries.append({"query": qt, "source": "ai_profile"})
+
+    # 2. From actual chunk content - sample 5 random chunks and create queries
+    chunk_sample_q = (
+        select(Chunk.text)
+        .join(Document, Chunk.document_id == Document.id)
+        .where(Document.project_id == project_id)
+        .order_by(func.random())
+        .limit(5)
+    )
+    sample_result = await db.execute(chunk_sample_q)
+    sample_texts = [r[0] for r in sample_result.all()]
+
+    for text_val in sample_texts:
+        # Extract first meaningful sentence as a "what is" query
+        sentences = [s.strip() for s in text_val.split('.') if len(s.strip()) > 20]
+        if sentences:
+            # Take key phrase from first sentence
+            first = sentences[0][:100]
+            # Create a query about the topic
+            words = first.split()[:8]
+            topic = ' '.join(words)
+            queries.append({"query": f"What is {topic}?", "source": "content_sample"})
+
+    # 3. From corpus config / analysis result
+    if project.analysis_result:
+        doc_type = project.analysis_result.get("corpus_summary", {}).get("dominant_doc_type", "")
+        if doc_type:
+            queries.append({"query": f"Explain the main concepts in this {doc_type} document", "source": "doc_type"})
+
+    # Deduplicate and limit to 8
+    seen = set()
+    unique = []
+    for q in queries:
+        if q["query"] not in seen:
+            seen.add(q["query"])
+            unique.append(q)
+
+    return {"queries": unique[:8]}
+
+
+@router.post("/{project_id}/validate")
+async def validate_project_rag(
+    project_id: UUID,
+    db: DbSession,
+):
+    """Run a quick validation test on the RAG pipeline.
+
+    Picks random chunks, uses their content as queries, and checks if
+    the system retrieves similar chunks back. Returns accuracy metrics.
+    """
+    from app.services.llm_service import llm_service
+
+    project = await _get_project(db, project_id)
+
+    # Get 5 random chunks that have embeddings
+    test_chunks_q = (
+        select(Chunk)
+        .join(Document, Chunk.document_id == Document.id)
+        .where(Document.project_id == project_id, Chunk.embedding.isnot(None))
+        .order_by(func.random())
+        .limit(5)
+    )
+    test_result = await db.execute(test_chunks_q)
+    test_chunks = test_result.scalars().all()
+
+    if not test_chunks:
+        return {"status": "error", "message": "No embedded chunks found"}
+
+    results = []
+    for chunk in test_chunks:
+        # Use first sentence as query
+        sentences = [s.strip() for s in chunk.text.split('.') if len(s.strip()) > 15]
+        if not sentences:
+            continue
+        query_text = sentences[0][:150]
+
+        # Get embedding for query
+        try:
+            embeddings = await llm_service.embed([query_text])
+            query_embedding = embeddings[0]
+        except Exception:
+            continue
+
+        # Search for similar chunks
+        embedding_str = f"[{','.join(map(str, query_embedding))}]"
+        search_q = (
+            select(
+                Chunk.id,
+                (1 - Chunk.embedding.cosine_distance(text(f"'{embedding_str}'::vector"))).label("score")
+            )
+            .join(Document, Chunk.document_id == Document.id)
+            .where(Document.project_id == project_id, Chunk.embedding.isnot(None))
+            .order_by(text("score DESC"))
+            .limit(5)
+        )
+        search_result = await db.execute(search_q)
+        top_results = search_result.all()
+
+        # Check if the source chunk appears in top 5
+        top_ids = [str(r[0]) for r in top_results]
+        top_scores = [float(r[1]) for r in top_results]
+        source_found = str(chunk.id) in top_ids
+        source_rank = top_ids.index(str(chunk.id)) + 1 if source_found else -1
+
+        results.append({
+            "query": query_text[:80] + "..." if len(query_text) > 80 else query_text,
+            "source_chunk_found": source_found,
+            "source_rank": source_rank,
+            "top_score": top_scores[0] if top_scores else 0,
+            "avg_score": sum(top_scores) / len(top_scores) if top_scores else 0,
+        })
+
+    # Calculate overall metrics
+    total = len(results)
+    found = sum(1 for r in results if r["source_chunk_found"])
+    avg_top_score = sum(r["top_score"] for r in results) / total if total else 0
+
+    # Determine health
+    retrieval_accuracy = found / total if total else 0
+    if retrieval_accuracy >= 0.8 and avg_top_score >= 0.7:
+        health = "excellent"
+    elif retrieval_accuracy >= 0.6 and avg_top_score >= 0.5:
+        health = "good"
+    elif retrieval_accuracy >= 0.4:
+        health = "fair"
+    else:
+        health = "poor"
+
+    return {
+        "status": "success",
+        "health": health,
+        "retrieval_accuracy": round(retrieval_accuracy * 100, 1),
+        "avg_relevance_score": round(avg_top_score, 3),
+        "tests_run": total,
+        "source_chunks_found": found,
+        "details": results,
+    }
+
+
+@router.post("/{project_id}/llm-judge")
+async def llm_judge_evaluate(
+    project_id: UUID,
+    request: dict,
+    db: DbSession,
+):
+    """Use LLM as judge to evaluate retrieval quality.
+
+    Takes a query and retrieved chunks, asks LLM to rate relevance.
+    """
+    from app.services.llm_service import llm_service
+
+    project = await _get_project(db, project_id)
+    query = request.get("query", "")
+    chunks = request.get("chunks", [])
+
+    if not query or not chunks:
+        raise BadRequestError("query and chunks are required")
+
+    # Build context from chunks
+    chunk_texts = []
+    for i, c in enumerate(chunks[:5]):
+        text_val = c.get("text", c.get("content", ""))[:500]
+        score = c.get("score", 0)
+        chunk_texts.append(f"[Chunk {i+1}] (score: {score:.3f})\n{text_val}")
+
+    context = "\n\n".join(chunk_texts)
+
+    prompt = f"""You are an expert RAG evaluation judge. Rate the quality of retrieved chunks for answering a query.
+
+QUERY: {query}
+
+RETRIEVED CHUNKS:
+{context}
+
+Evaluate and return a JSON object with:
+1. "relevance_score": 1-5 (1=completely irrelevant, 5=perfectly relevant)
+2. "coverage_score": 1-5 (1=missing key info, 5=fully covers the query)
+3. "answer_possible": true/false (can the query be answered from these chunks?)
+4. "suggested_answer": A brief answer based on the chunks (2-3 sentences)
+5. "feedback": What's good/bad about these results (1-2 sentences)
+6. "overall_grade": "A" | "B" | "C" | "D" | "F"
+
+Return ONLY valid JSON, no markdown fences."""
+
+    try:
+        response = await llm_service.generate(
+            prompt=prompt,
+            system_prompt="You are a precise RAG quality evaluator. Return only valid JSON.",
+            temperature=0.1,
+            max_tokens=500,
+        )
+
+        import re
+        cleaned = re.sub(r"^```(?:json)?\s*", "", response.strip())
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+
+        import json
+        result = json.loads(cleaned)
+        return {"status": "success", "evaluation": result}
+    except json.JSONDecodeError:
+        return {"status": "success", "evaluation": {"feedback": response, "overall_grade": "?"}}
+    except Exception as e:
+        raise BadRequestError(f"LLM evaluation failed: {str(e)}")

@@ -40,7 +40,6 @@ async def test_upload_pdf_success(client: AsyncClient, tmp_path):
     
     response = await client.post(
         "/api/v1/documents/upload",
-        ,
         files={"file": ("test.pdf", io.BytesIO(pdf_content), "application/pdf")},
     )
     
@@ -56,7 +55,6 @@ async def test_upload_unknown_file_type_accepted(client: AsyncClient):
     """Test that unknown file types are accepted with type 'unknown'."""
     response = await client.post(
         "/api/v1/documents/upload",
-        ,
         files={"file": ("test.exe", io.BytesIO(b"fake content"), "application/octet-stream")},
     )
 
@@ -70,7 +68,6 @@ async def test_upload_corrupted_pdf(client: AsyncClient):
     """Test rejection of corrupted PDF (wrong magic bytes)."""
     response = await client.post(
         "/api/v1/documents/upload",
-        ,
         files={"file": ("test.pdf", io.BytesIO(b"not a pdf"), "application/pdf")},
     )
     
@@ -98,7 +95,6 @@ async def test_get_document(client: AsyncClient, test_document: Document):
     """Test getting a specific document."""
     response = await client.get(
         f"/api/v1/documents/{test_document.id}",
-        ,
     )
     
     assert response.status_code == 200
@@ -114,7 +110,6 @@ async def test_get_document_not_found(client: AsyncClient):
     fake_id = uuid4()
     response = await client.get(
         f"/api/v1/documents/{fake_id}",
-        ,
     )
     
     assert response.status_code == 404
@@ -125,7 +120,6 @@ async def test_delete_document(client: AsyncClient, test_document: Document):
     """Test deleting a document."""
     response = await client.delete(
         f"/api/v1/documents/{test_document.id}",
-        ,
     )
     
     assert response.status_code == 200

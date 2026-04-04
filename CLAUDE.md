@@ -65,25 +65,26 @@ frontend/
       pipeline/      # Visual pipeline builder
       dashboard/     # Project overview with stats
       guide/         # Strategy knowledge base
-      ... (6 more pages)
+      analyze/       # AI-powered corpus analysis
+      visualizer/    # Chunk visualization page
     components/
       analysis/      # PipelineFlow (React Flow), PipelineRecommendation, AnalysisResultOverlay
-      pipeline/      # Visual builder (nodes, palette, config, wizard, health, cost ticker)
-      suggestions/   # AI recommendation UI
-      evaluation/    # Metrics, comparison, quality score
-      cost/          # Cost estimator
+      pipeline/      # Visual builder (nodes, palette, config, wizard, health)
+                     # TesterPanel.tsx - Slide-out RAG testing panel with full pipeline execution
       visualizer/    # Chunk visualization
       layout/        # Navbar (Projects, Pipeline Builder, Strategy Guide, Dashboard)
-    stores/          # Zustand (pipeline, suggestion, evaluation, config, chunk)
+    stores/          # Zustand (pipeline, config, chunk)
     lib/             # API client, pipeline node definitions
 ```
 
 ## Core User Flow
 1. **Create project** -> Upload documents (single, ZIP, folder)
-2. **Analyze corpus** -> Choose rule-based (`/analyze`, `/smart-analyze`) or AI-powered (`/ai-analyze`)
-3. **View recommendation** -> PipelineFlow component shows recommended techniques per stage
-4. **Build pipeline** -> "Build Pipeline" button navigates to `/pipeline?projectId={id}` with recommendation pre-loaded
-5. **Query & test** -> Run queries against the pipeline
+2. **Analyze corpus** -> AI-powered analysis (LLM reads samples, picks optimal techniques)
+3. **View recommendation** -> PipelineFlow shows recommended techniques per stage
+4. **Build pipeline** -> "Build Pipeline" navigates to /pipeline with recommendation pre-loaded
+5. **Run pipeline** -> Chunks documents, generates embeddings, auto-validates
+6. **Test & evaluate** -> Tester panel runs queries through exact pipeline, LLM judges quality
+7. **Export** -> Download standalone Python code for the pipeline
 
 ## Environment Variables
 ```
@@ -163,6 +164,13 @@ LLM picks optimal pipeline from available nodes.
 - Returns 2-3+ techniques per stage with reasoning
 - 5+ "why not" explanations
 
+### LLM Judge (in query.py pipeline-test endpoint)
+Runs query through full pipeline (retrieve → rerank → generate), then a separate LLM grades the output:
+- Relevance (1-5): Are retrieved chunks relevant to the query?
+- Faithfulness (1-5): Is the answer supported by the chunks (no hallucination)?
+- Completeness (1-5): Does the answer fully address the query?
+- Overall grade: A/B/C/D/F
+
 ### Strategy Guide (`services/strategy_guide.py`)
 39 strategies with: when_to_use, when_not_to_use, best_for, complexity, latency, cost, pairs_well_with, pro_tip, example_config.
 
@@ -183,9 +191,19 @@ Takes doc_type + corpus_size + query_type + priority + budget -> returns full pi
 - `POST /projects/{id}/ai-analyze` - AI-powered analysis (LLM profiler + LLM pipeline selector)
 - `POST /projects/{id}/chunk` - On-demand chunking with text extraction
 - `GET /projects/{id}/chunks` - Get all chunks (paginated)
+- `GET /projects/{id}/chunk-status` - Check chunk/embedding completion status
+- `GET /projects/{id}/sample-queries` - Auto-generate test queries from content
+- `POST /projects/{id}/validate` - Auto-validate RAG pipeline (retrieval accuracy)
+- `POST /projects/{id}/llm-judge` - LLM evaluates retrieval quality (grades A-F)
 
 ### Query Endpoint (`/api/v1/query`)
 - `POST /query/` - Execute retrieval query (uses LiteLLM for embeddings)
+- `POST /query/enriched` - Query with technical metrics (latency, scores, index stats)
+- `POST /query/pipeline-test` - Full pipeline test (retrieve → rerank → generate → judge)
+
+### Pipeline Endpoints (`/api/v1/pipelines`)
+- `POST /pipelines/{id}/execute-step` - Execute single pipeline node
+- `POST /pipelines/{id}/execute-step-stream` - SSE streaming execution with progress
 
 ## Conventions
 - Backend services are async where possible

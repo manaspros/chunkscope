@@ -28,10 +28,7 @@ httpx>=0.26.0
 # LLM (unified provider access)
 litellm>=1.30.0
 
-# LangChain & AI
-langchain>=0.1.0
-langchain-openai>=0.0.5
-langchain-community>=0.0.10
+# AI
 openai>=1.10.0
 
 # Document Processing

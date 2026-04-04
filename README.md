@@ -64,7 +64,7 @@ storing vectors and metadata in PostgreSQL with the pgvector extension.
 | Layer | Technologies |
 |---|---|
 | Frontend | Next.js 14, TypeScript, Tailwind CSS, React Flow, Zustand, Framer Motion |
-| Backend | FastAPI, SQLAlchemy (async), Pydantic, LiteLLM, LangChain |
+| Backend | FastAPI, SQLAlchemy (async), Pydantic, LiteLLM |
 | Database | PostgreSQL 16, pgvector |
 | Infra | Docker Compose, Alembic migrations |
 
@@ -77,6 +77,7 @@ All routes are under `/api/v1`. Main groups:
 | Group | Description |
 |---|---|
 | `/health` | Liveness check |
+| `/projects` | Project CRUD, file upload, analysis, chunking, chunk-status, sample-queries, validation |
 | `/documents` | Upload and manage PDF/text documents |
 | `/chunks` | Chunk documents with configurable strategies |
 | `/embeddings` | Generate and store embeddings |

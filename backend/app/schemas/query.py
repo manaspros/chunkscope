@@ -11,6 +11,7 @@ class QueryRequest(BaseModel):
         description="Retrieval algorithm: vector | keyword | hybrid | mmr | parent_document"
     )
     top_k: int = Field(default=5, ge=1, le=100)
+    project_id: Optional[UUID] = Field(default=None, description="Filter results by project ID")
     document_id: Optional[UUID] = Field(default=None, description="Filter results by document ID")
     
     # Hybrid search params

@@ -127,6 +127,11 @@ class Pipeline(Base, TimestampMixin):
     nodes: Mapped[list] = mapped_column(JSONB, default=list)
     edges: Mapped[list] = mapped_column(JSONB, default=list)
 
+    # Link to project (for execution context)
+    project_id: Mapped[Optional[UUID]] = mapped_column(
+        Uuid, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
     # Link to preset if created from one
     preset_id: Mapped[Optional[UUID]] = mapped_column(Uuid, ForeignKey("presets.id"), nullable=True)
 

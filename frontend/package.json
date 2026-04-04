@@ -8,7 +8,9 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "test": "vitest"
+        "test": "vitest",
+        "test:unit": "vitest run",
+        "test:e2e": "playwright test"
     },
     "dependencies": {
         "@hookform/resolvers": "^3.3.4",

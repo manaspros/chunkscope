@@ -21,7 +21,7 @@ export function LoaderNode({ id, data, selected }: NodeProps) {
                 <div className="flex flex-col gap-1">
                     <Label className="text-[10px] uppercase text-neutral-500 font-bold">File Path (Absolute)</Label>
                     <Input
-                        className="h-6 text-[10px] bg-black/40 border-white/10"
+                        className="h-6 text-[10px] bg-gray-50 border-gray-200"
                         placeholder="C:/path/to/doc.pdf"
                         defaultValue={data.path || "C:/Users/ASMIT/Downloads/sample.pdf"}
                         onChange={(e) => {
@@ -29,7 +29,7 @@ export function LoaderNode({ id, data, selected }: NodeProps) {
                         }}
                     />
                 </div>
-                <div className="text-[10px] text-neutral-400">
+                <div className="text-[10px] text-gray-500">
                     <p>Type: <span className="text-blue-400">PDF</span></p>
                 </div>
             </div>

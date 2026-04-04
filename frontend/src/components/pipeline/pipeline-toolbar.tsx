@@ -84,15 +84,15 @@ export function PipelineToolbar() {
     }
 
     return (
-        <Card className="flex flex-col w-56 bg-black/80 backdrop-blur-md border-white/10 text-white shadow-xl h-[calc(100vh-8rem)]">
-            <div className="p-3 border-b border-white/10">
-                <div className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4 flex justify-between items-center">
+        <Card className="flex flex-col w-56 bg-white border-gray-200 text-gray-900 shadow-lg h-[calc(100vh-8rem)]">
+            <div className="p-3 border-b border-gray-200">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex justify-between items-center">
                     Node Library
                     <div className="flex gap-1">
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-neutral-500 hover:text-white disabled:opacity-30"
+                            className="h-6 w-6 text-gray-400 hover:text-gray-900 disabled:opacity-30"
                             onClick={undo}
                             disabled={history.length === 0}
                             title="Undo"
@@ -102,7 +102,7 @@ export function PipelineToolbar() {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-neutral-500 hover:text-white disabled:opacity-30"
+                            className="h-6 w-6 text-gray-400 hover:text-gray-900 disabled:opacity-30"
                             onClick={redo}
                             disabled={future.length === 0}
                             title="Redo"
@@ -146,10 +146,10 @@ export function PipelineToolbar() {
                 </Button>
 
                 <div className="flex gap-2">
-                    <Button size="icon" variant="outline" className="flex-1 h-8 border-white/10 hover:bg-white/10 text-neutral-400 hover:text-white">
+                    <Button size="icon" variant="outline" className="flex-1 h-8 border-gray-200 hover:bg-gray-100 text-gray-500 hover:text-gray-900">
                         <Save className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" variant="destructive" className="flex-1 h-8 bg-red-900/40 hover:bg-red-900/60 border-red-900/50 text-red-200">
+                    <Button size="icon" variant="destructive" className="flex-1 h-8 bg-red-50 hover:bg-red-100 border-red-200 text-red-600">
                         <Trash2 className="w-4 h-4" />
                     </Button>
                 </div>
@@ -165,14 +165,14 @@ export function PipelineToolbar() {
                             {cat.items.map((item) => (
                                 <div
                                     key={item.type}
-                                    className="group flex items-center gap-2.5 p-2 rounded-md hover:bg-white/5 cursor-grab active:cursor-grabbing text-sm border border-transparent hover:border-white/10 transition-all"
+                                    className="group flex items-center gap-2.5 p-2 rounded-md hover:bg-gray-50 cursor-grab active:cursor-grabbing text-sm border border-transparent hover:border-gray-200 transition-all"
                                     onDragStart={(event) => onDragStart(event, item.type)}
                                     draggable
                                 >
-                                    <div className={cn("p-1.5 rounded bg-black/40 border border-white/5 group-hover:border-white/20 transition-colors", item.color)}>
+                                    <div className={cn("p-1.5 rounded bg-gray-50 border border-gray-200 group-hover:border-gray-300 transition-colors", item.color)}>
                                         {item.icon}
                                     </div>
-                                    <span className="text-neutral-300 group-hover:text-white transition-colors">{item.label}</span>
+                                    <span className="text-gray-700 group-hover:text-gray-900 transition-colors">{item.label}</span>
                                 </div>
                             ))}
                         </div>

@@ -25,10 +25,10 @@ export function GenerationNode({ id, data, selected }: any) {
                         value={data.model || "gpt-4o"}
                         onValueChange={(val) => updateNodeData(id, { model: val })}
                     >
-                        <SelectTrigger className="h-8 bg-black/40 border-white/5 text-xs focus:ring-0">
+                        <SelectTrigger className="h-8 bg-gray-50 border-gray-200 text-xs focus:ring-0">
                             <SelectValue placeholder="Model" />
                         </SelectTrigger>
-                        <SelectContent className="bg-neutral-900 border-white/10 text-white text-xs">
+                        <SelectContent className="bg-white border-gray-200 text-gray-900 text-xs">
                             <SelectItem value="gpt-4o">GPT-4o</SelectItem>
                             <SelectItem value="claude-3-5">Claude 3.5 Sonnet</SelectItem>
                             <SelectItem value="llama-3">Llama 3 (Groq)</SelectItem>
@@ -39,7 +39,7 @@ export function GenerationNode({ id, data, selected }: any) {
                 <div className="flex flex-col gap-1.5">
                     <Label className="text-[10px] uppercase text-neutral-500 font-bold">System Prompt</Label>
                     <textarea
-                        className="text-[11px] px-2 py-1.5 rounded bg-black/40 border border-white/5 text-neutral-300 min-h-[60px] resize-none focus:outline-none focus:border-white/20"
+                        className="text-[11px] px-2 py-1.5 rounded bg-gray-50 border border-gray-200 text-gray-700 min-h-[60px] resize-none focus:outline-none focus:border-gray-300"
                         placeholder="You are a helpful assistant..."
                         value={data.systemPrompt || "You are a helpful assistant. Use the context provided to answer the user's question."}
                         onChange={(e) => updateNodeData(id, { systemPrompt: e.target.value })}

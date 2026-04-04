@@ -44,7 +44,7 @@ export function SplitterNode({ id, data, selected }: NodeProps) {
                                 <Eye size={12} />
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl bg-neutral-950 border-white/10 shadow-2xl">
+                        <DialogContent className="max-w-4xl bg-white border-gray-200 shadow-2xl">
                             <DialogHeader>
                                 <DialogTitle className="flex items-center gap-2 text-emerald-400">
                                     <Scissors className="w-5 h-5" />
@@ -71,10 +71,10 @@ export function SplitterNode({ id, data, selected }: NodeProps) {
                         value={data.method || 'recursive'}
                         onValueChange={(value) => updateNodeData(id, { method: value })}
                     >
-                        <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-neutral-300 focus:ring-emerald-500/20">
+                        <SelectTrigger className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700 focus:ring-emerald-500/30">
                             <SelectValue placeholder="Select method" />
                         </SelectTrigger>
-                        <SelectContent className="bg-neutral-900 border-white/10 text-neutral-300">
+                        <SelectContent className="bg-white border-gray-200 text-gray-700">
                             <SelectItem value="fixed">Fixed Size</SelectItem>
                             <SelectItem value="recursive">Recursive</SelectItem>
                             <SelectItem value="sentence">Sentence</SelectItem>
@@ -91,7 +91,7 @@ export function SplitterNode({ id, data, selected }: NodeProps) {
                         </Label>
                         <Input
                             type="number"
-                            className="h-8 text-xs bg-black/40 border-white/10 text-neutral-300 focus:ring-emerald-500/20"
+                            className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700 focus:ring-emerald-500/30"
                             value={data.windowSize || data.chunkSize || 512}
                             onChange={(e) => {
                                 const val = parseInt(e.target.value) || 0
@@ -106,7 +106,7 @@ export function SplitterNode({ id, data, selected }: NodeProps) {
                         <Label className="text-[10px] uppercase font-bold text-neutral-500">Overlap</Label>
                         <Input
                             type="number"
-                            className="h-8 text-xs bg-black/40 border-white/10 text-neutral-300 focus:ring-emerald-500/20"
+                            className="h-8 text-xs bg-gray-50 border-gray-200 text-gray-700 focus:ring-emerald-500/30"
                             value={data.overlap || 0}
                             onChange={(e) => updateNodeData(id, { overlap: parseInt(e.target.value) || 0 })}
                         />

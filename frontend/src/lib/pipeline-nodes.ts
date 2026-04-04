@@ -150,16 +150,6 @@ export const NODE_DEFINITIONS: PipelineNodeDef[] = [
             systemPrompt: 'You are a helpful assistant. Use the provided context to answer questions.',
         },
     },
-    {
-        type: 'evaluation',
-        label: 'Evaluation',
-        category: 'output',
-        icon: 'BarChart3',
-        description: 'Evaluate pipeline quality',
-        defaultConfig: {
-            metrics: ['faithfulness', 'relevancy', 'context_precision'],
-        },
-    },
 ];
 
 export function getNodeDef(type: string): PipelineNodeDef | undefined {
@@ -248,25 +238,15 @@ export const LLM_MODELS = [
     { id: 'mixtral-8x7b', label: 'Mixtral 8x7B', provider: 'Groq', cost: 'Very Low' },
 ];
 
-// Evaluation metric options
-export const EVAL_METRICS = [
-    { id: 'faithfulness', label: 'Faithfulness', description: 'Answer grounded in context' },
-    { id: 'relevancy', label: 'Answer Relevancy', description: 'Answer addresses the question' },
-    { id: 'context_precision', label: 'Context Precision', description: 'Retrieved context is precise' },
-    { id: 'context_recall', label: 'Context Recall', description: 'Retrieved context has coverage' },
-    { id: 'harmfulness', label: 'Harmfulness', description: 'Detect harmful outputs' },
-];
-
 // Connection validation rules
 export const CONNECTION_RULES: Record<string, string[]> = {
     document_upload: ['chunking', 'llm_generation'],
     chunking: ['embedding', 'vector_store', 'llm_generation'],
     embedding: ['vector_store'],
     vector_store: ['retriever'],
-    retriever: ['reranker', 'llm_generation', 'evaluation'],
-    reranker: ['llm_generation', 'evaluation'],
-    llm_generation: ['evaluation'],
-    evaluation: [],
+    retriever: ['reranker', 'llm_generation'],
+    reranker: ['llm_generation'],
+    llm_generation: [],
 };
 
 // Helper to build pipeline config for API

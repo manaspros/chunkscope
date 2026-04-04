@@ -73,21 +73,42 @@ class QueryAugmentor:
 
         response_text = await self._get_completion(system_prompt, user_prompt, cache_key)
 
+        # Clean markdown fences from LLM response
+        import re
+        cleaned = re.sub(r"^```(?:json)?\s*", "", response_text.strip())
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+
         try:
-            # Try to parse as JSON list
-            variants = json.loads(response_text)
+            variants = json.loads(cleaned)
             if isinstance(variants, list):
-                # Ensure original is included if not present
+                # Clean each variant
+                variants = [str(v).strip().strip('"').strip("'").rstrip(",") for v in variants if str(v).strip()]
+                variants = [v for v in variants if len(v) > 3]  # Filter garbage
                 if query not in variants:
                     variants = [query] + variants[:num_variants - 1]
-                return [str(v) for v in variants]
+                return variants[:num_variants]
         except Exception:
-            # Fallback parsing
-            lines = [line.strip().strip('"') for line in response_text.split('\n') if line.strip()]
-            variants = [line for line in lines if line and not line.startswith('[') and not line.startswith(']')]
-            if not variants:
-                return [query]
-            return variants[:num_variants]
+            pass
+
+        # Fallback: line-by-line parsing
+        lines = cleaned.split('\n')
+        variants = []
+        for line in lines:
+            line = line.strip().strip('"').strip("'").rstrip(",").strip()
+            # Skip JSON artifacts
+            if not line or line in ('[', ']', '```', '```json'):
+                continue
+            # Remove numbered prefixes like "1. " or "- "
+            line = re.sub(r"^[\d]+\.\s*", "", line)
+            line = re.sub(r"^[-*]\s*", "", line)
+            if len(line) > 3:
+                variants.append(line)
+
+        if not variants:
+            return [query]
+        if query not in variants:
+            variants = [query] + variants[:num_variants - 1]
+        return variants[:num_variants]
 
     async def augment_hyde(self, query: str) -> str:
         """Generate a hypothetical document (HyDE)."""

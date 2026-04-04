@@ -67,7 +67,6 @@ async def test_apply_preset(client: AsyncClient):
     # Apply preset
     response = await client.post(
         f"/api/v1/presets/{preset_id}/apply",
-        ,
         params={"pipeline_name": "Test Pipeline from Preset"}
     )
     assert response.status_code == 200

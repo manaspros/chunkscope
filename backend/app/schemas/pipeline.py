@@ -40,6 +40,7 @@ class PipelineCreate(BaseModel):
     """Create a new pipeline."""
     name: str = Field(min_length=1, max_length=255)
     description: Optional[str] = None
+    project_id: Optional[UUID] = None
     nodes: list[PipelineNode] = Field(default_factory=list)
     edges: list[PipelineEdge] = Field(default_factory=list)
     settings: dict[str, Any] = Field(default_factory=dict)
@@ -62,6 +63,7 @@ class PipelineResponse(BaseSchema, IDMixin, TimestampMixin):
     """Pipeline response."""
     name: str
     description: Optional[str] = None
+    project_id: Optional[UUID] = None
     status: str
     nodes: list[PipelineNode]
     edges: list[PipelineEdge]

@@ -16,7 +16,6 @@ import {
     RETRIEVAL_STRATEGIES,
     RERANKER_PROVIDERS,
     LLM_MODELS,
-    EVAL_METRICS,
     NodeCategory,
 } from '@/lib/pipeline-nodes'
 import {
@@ -575,59 +574,6 @@ function LLMConfig({ nodeId, data }: { nodeId: string; data: any }) {
     )
 }
 
-function EvaluationConfig({ nodeId, data }: { nodeId: string; data: any }) {
-    const updateNodeData = usePipelineStore((s) => s.updateNodeData)
-    const selectedMetrics: string[] = data.metrics || []
-
-    const toggleMetric = (metricId: string) => {
-        const updated = selectedMetrics.includes(metricId)
-            ? selectedMetrics.filter((m) => m !== metricId)
-            : [...selectedMetrics, metricId]
-        updateNodeData(nodeId, { metrics: updated })
-    }
-
-    return (
-        <div className="space-y-4">
-            <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase text-gray-500 font-bold">Metrics</Label>
-                <p className="text-[9px] text-gray-400 mb-2">Select metrics to evaluate pipeline output</p>
-                <div className="space-y-1.5">
-                    {EVAL_METRICS.map((metric) => {
-                        const isSelected = selectedMetrics.includes(metric.id)
-                        return (
-                            <button
-                                key={metric.id}
-                                onClick={() => toggleMetric(metric.id)}
-                                className={cn(
-                                    "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left transition-all",
-                                    isSelected
-                                        ? "bg-orange-50 border-orange-200 text-orange-700"
-                                        : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
-                                )}
-                            >
-                                <div className={cn(
-                                    "w-3.5 h-3.5 rounded border-2 flex items-center justify-center transition-all",
-                                    isSelected ? "bg-orange-500 border-orange-500" : "border-gray-300"
-                                )}>
-                                    {isSelected && (
-                                        <svg className="w-2 h-2 text-white" viewBox="0 0 12 12" fill="none">
-                                            <path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    )}
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[11px] font-medium">{metric.label}</span>
-                                    <span className="text-[9px] text-gray-400">{metric.description}</span>
-                                </div>
-                            </button>
-                        )
-                    })}
-                </div>
-            </div>
-        </div>
-    )
-}
-
 // --------------- Preview Panel ---------------
 
 function NodePreviewPanel({ nodeId }: { nodeId: string }) {
@@ -671,7 +617,6 @@ function getConfigComponent(type: string, nodeId: string, data: any) {
         case 'retriever': return <RetrieverConfig nodeId={nodeId} data={data} />
         case 'reranker': return <RerankerConfig nodeId={nodeId} data={data} />
         case 'llm_generation': return <LLMConfig nodeId={nodeId} data={data} />
-        case 'evaluation': return <EvaluationConfig nodeId={nodeId} data={data} />
         default: return <p className="text-[11px] text-gray-500">No configuration available for this node type.</p>
     }
 }
@@ -705,7 +650,7 @@ export function ConfigPanel() {
                         </div>
                         <button
                             onClick={() => selectNode(null)}
-                            className="p-1 rounded hover:bg-black/5 transition-colors"
+                            className="p-1 rounded hover:bg-gray-100 transition-colors"
                         >
                             <X className="w-3.5 h-3.5 text-gray-400" />
                         </button>

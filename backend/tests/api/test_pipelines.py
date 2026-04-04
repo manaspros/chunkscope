@@ -57,7 +57,6 @@ async def test_create_pipeline(client: AsyncClient):
     """Test creating a pipeline."""
     response = await client.post(
         "/api/v1/pipelines",
-        ,
         json={
             "name": "New Pipeline",
             "description": "Test description",
@@ -89,9 +88,8 @@ async def test_get_pipeline(client: AsyncClient, test_pipeline: Pipeline):
     """Test getting a specific pipeline."""
     response = await client.get(
         f"/api/v1/pipelines/{test_pipeline.id}",
-        ,
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Test Pipeline"
@@ -102,7 +100,6 @@ async def test_update_pipeline(client: AsyncClient, test_pipeline: Pipeline):
     """Test updating a pipeline."""
     response = await client.patch(
         f"/api/v1/pipelines/{test_pipeline.id}",
-        ,
         json={"name": "Updated Name"},
     )
     
@@ -116,9 +113,8 @@ async def test_delete_pipeline(client: AsyncClient, test_pipeline: Pipeline):
     """Test deleting a pipeline."""
     response = await client.delete(
         f"/api/v1/pipelines/{test_pipeline.id}",
-        ,
     )
-    
+
     assert response.status_code == 200
 
 
@@ -129,14 +125,12 @@ async def test_delete_pipeline(client: AsyncClient, test_pipeline: Pipeline):
 @pytest.mark.asyncio
 async def test_execute_pipeline(
     client: AsyncClient,
-    ,
     test_pipeline: Pipeline,
     test_document: Document,
 ):
     """Test executing a pipeline."""
     response = await client.post(
         f"/api/v1/pipelines/{test_pipeline.id}/execute",
-        ,
         json={
             "document_id": str(test_document.id),
             "options": {
@@ -155,9 +149,7 @@ async def test_execute_pipeline(
 @pytest.mark.asyncio
 async def test_execute_pipeline_empty_nodes(
     client: AsyncClient,
-    ,
     test_db,
-    ,
     test_document: Document,
 ):
     """Test error when pipeline has no nodes."""
@@ -174,7 +166,6 @@ async def test_execute_pipeline_empty_nodes(
     
     response = await client.post(
         f"/api/v1/pipelines/{empty_pipeline.id}/execute",
-        ,
         json={"document_id": str(test_document.id)},
     )
     
@@ -185,14 +176,12 @@ async def test_execute_pipeline_empty_nodes(
 @pytest.mark.asyncio
 async def test_execute_pipeline_document_not_found(
     client: AsyncClient,
-    ,
     test_pipeline: Pipeline,
 ):
     """Test error when document doesn't exist."""
     fake_id = uuid4()
     response = await client.post(
         f"/api/v1/pipelines/{test_pipeline.id}/execute",
-        ,
         json={"document_id": str(fake_id)},
     )
     
@@ -202,13 +191,11 @@ async def test_execute_pipeline_document_not_found(
 @pytest.mark.asyncio
 async def test_list_executions(
     client: AsyncClient,
-    ,
     test_pipeline: Pipeline,
 ):
     """Test listing pipeline executions."""
     response = await client.get(
         f"/api/v1/pipelines/{test_pipeline.id}/executions",
-        ,
     )
     
     assert response.status_code == 200

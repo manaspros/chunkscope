@@ -274,7 +274,7 @@ export default function GuidePage() {
                                 className={cn(
                                     "px-2.5 py-1 rounded-full text-[10px] font-medium border transition-all",
                                     complexityFilter === level
-                                        ? "bg-gray-900 border-gray-900 text-white"
+                                        ? "bg-amber-50 border-amber-300 text-amber-700"
                                         : "border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 bg-white"
                                 )}
                             >

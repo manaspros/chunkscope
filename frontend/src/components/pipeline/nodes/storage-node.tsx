@@ -19,10 +19,10 @@ export function StorageNode({ data, selected }: any) {
                 <div className="flex flex-col gap-1.5">
                     <Label className="text-[10px] uppercase text-neutral-500 font-bold">Provider</Label>
                     <Select defaultValue="chroma">
-                        <SelectTrigger className="h-8 bg-black/40 border-white/5 text-xs">
+                        <SelectTrigger className="h-8 bg-gray-50 border-gray-200 text-xs">
                             <SelectValue placeholder="Select provider" />
                         </SelectTrigger>
-                        <SelectContent className="bg-neutral-900 border-white/10 text-white text-xs">
+                        <SelectContent className="bg-white border-gray-200 text-gray-900 text-xs">
                             <SelectItem value="chroma">ChromaDB</SelectItem>
                             <SelectItem value="pinecone">Pinecone</SelectItem>
                             <SelectItem value="weaviate">Weaviate</SelectItem>
@@ -33,7 +33,7 @@ export function StorageNode({ data, selected }: any) {
 
                 <div className="flex flex-col gap-1.5">
                     <Label className="text-[10px] uppercase text-neutral-500 font-bold">Collection</Label>
-                    <div className="text-[11px] px-2 py-1.5 rounded bg-black/40 border border-white/5 text-neutral-400">
+                    <div className="text-[11px] px-2 py-1.5 rounded bg-gray-50 border border-gray-200 text-gray-500">
                         default_collection
                     </div>
                 </div>

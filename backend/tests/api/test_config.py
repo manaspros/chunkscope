@@ -34,13 +34,11 @@ async def test_document(test_db) -> Document:
 @pytest.mark.asyncio
 async def test_analyze_document(
     client: AsyncClient,
-    ,
     test_document: Document,
 ):
     """Test document analysis."""
     response = await client.post(
         "/api/v1/config/analyze-document",
-        ,
         json={"document_id": str(test_document.id)},
     )
     
@@ -57,13 +55,11 @@ async def test_analyze_document(
 @pytest.mark.asyncio
 async def test_analyze_document_not_found(
     client: AsyncClient,
-    ,
 ):
     """Test error when document doesn't exist."""
     fake_id = uuid4()
     response = await client.post(
         "/api/v1/config/analyze-document",
-        ,
         json={"document_id": str(fake_id)},
     )
     
@@ -77,12 +73,10 @@ async def test_analyze_document_not_found(
 @pytest.mark.asyncio
 async def test_validate_valid_pipeline(
     client: AsyncClient,
-    ,
 ):
     """Test validating a valid pipeline."""
     response = await client.post(
         "/api/v1/config/validate-pipeline",
-        ,
         json={
             "nodes": [
                 {"id": "n1", "type": "chunker"},
@@ -103,12 +97,10 @@ async def test_validate_valid_pipeline(
 @pytest.mark.asyncio
 async def test_validate_empty_pipeline(
     client: AsyncClient,
-    ,
 ):
     """Test validation error for empty pipeline."""
     response = await client.post(
         "/api/v1/config/validate-pipeline",
-        ,
         json={"nodes": [], "edges": []},
     )
     
@@ -121,12 +113,10 @@ async def test_validate_empty_pipeline(
 @pytest.mark.asyncio
 async def test_validate_duplicate_node_ids(
     client: AsyncClient,
-    ,
 ):
     """Test validation error for duplicate node IDs."""
     response = await client.post(
         "/api/v1/config/validate-pipeline",
-        ,
         json={
             "nodes": [
                 {"id": "n1", "type": "chunker"},
@@ -145,12 +135,10 @@ async def test_validate_duplicate_node_ids(
 @pytest.mark.asyncio
 async def test_validate_invalid_edge_target(
     client: AsyncClient,
-    ,
 ):
     """Test validation error for edge pointing to non-existent node."""
     response = await client.post(
         "/api/v1/config/validate-pipeline",
-        ,
         json={
             "nodes": [
                 {"id": "n1", "type": "chunker"},
@@ -170,12 +158,10 @@ async def test_validate_invalid_edge_target(
 @pytest.mark.asyncio
 async def test_validate_cyclic_pipeline(
     client: AsyncClient,
-    ,
 ):
     """Test validation error for pipeline with cycle."""
     response = await client.post(
         "/api/v1/config/validate-pipeline",
-        ,
         json={
             "nodes": [
                 {"id": "n1", "type": "chunker"},
@@ -197,12 +183,10 @@ async def test_validate_cyclic_pipeline(
 @pytest.mark.asyncio
 async def test_validate_orphan_node_warning(
     client: AsyncClient,
-    ,
 ):
     """Test warning for orphan nodes."""
     response = await client.post(
         "/api/v1/config/validate-pipeline",
-        ,
         json={
             "nodes": [
                 {"id": "n1", "type": "chunker"},
@@ -225,12 +209,10 @@ async def test_validate_orphan_node_warning(
 @pytest.mark.asyncio
 async def test_validate_cost_estimation(
     client: AsyncClient,
-    ,
 ):
     """Test cost estimation in validation response."""
     response = await client.post(
         "/api/v1/config/validate-pipeline",
-        ,
         json={
             "nodes": [
                 {"id": "n1", "type": "chunker"},

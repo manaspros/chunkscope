@@ -16,27 +16,6 @@ apiClient.interceptors.response.use(
     }
 );
 
-export const presetsApi = {
-    listPresets: async (category?: string) => {
-        const params = category ? { category } : {};
-        const response = await apiClient.get('/api/v1/presets', { params });
-        return response.data;
-    },
-    getPreset: async (presetId: string) => {
-        const response = await apiClient.get(`/api/v1/presets/${presetId}`);
-        return response.data;
-    },
-    applyPreset: async (presetId: string, pipelineName?: string, documentId?: string, configOverride?: any) => {
-        const response = await apiClient.post(`/api/v1/presets/${presetId}/apply`, configOverride || null, {
-            params: {
-                pipeline_name: pipelineName,
-                document_id: documentId
-            }
-        });
-        return response.data;
-    }
-};
-
 export const pipelinesApi = {
     listPipelines: async () => {
         const response = await apiClient.get('/api/v1/pipelines');
@@ -49,7 +28,57 @@ export const pipelinesApi = {
     deletePipeline: async (pipelineId: string) => {
         const response = await apiClient.delete(`/api/v1/pipelines/${pipelineId}`);
         return response.data;
-    }
+    },
+    executeStep: async (pipelineId: string, data: { node_id: string; node_type: string; config: any; project_id?: string }) => {
+        const response = await apiClient.post(`/api/v1/pipelines/${pipelineId}/execute-step`, data);
+        return response.data;
+    },
+    executeStepStream: (
+        pipelineId: string,
+        data: { node_id: string; node_type: string; config: any; project_id?: string },
+        onProgress: (evt: { step: string; progress: number; message: string }) => void,
+    ): Promise<any> => {
+        return new Promise((resolve, reject) => {
+            const baseURL = apiClient.defaults.baseURL || ''
+            fetch(`${baseURL}/api/v1/pipelines/${pipelineId}/execute-step-stream`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            }).then(async (response) => {
+                if (!response.ok) {
+                    const errText = await response.text()
+                    reject(new Error(errText || `HTTP ${response.status}`))
+                    return
+                }
+                const reader = response.body?.getReader()
+                if (!reader) { reject(new Error('No response body')); return }
+                const decoder = new TextDecoder()
+                let buffer = ''
+                let result: any = null
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+                    buffer += decoder.decode(value, { stream: true })
+                    const lines = buffer.split('\n')
+                    buffer = lines.pop() || ''
+                    let eventType = ''
+                    for (const line of lines) {
+                        if (line.startsWith('event: ')) {
+                            eventType = line.slice(7).trim()
+                        } else if (line.startsWith('data: ')) {
+                            try {
+                                const parsed = JSON.parse(line.slice(6))
+                                if (eventType === 'progress') onProgress(parsed)
+                                else if (eventType === 'complete') result = parsed
+                                else if (eventType === 'error') { reject(new Error(parsed.message || 'Stream error')); return }
+                            } catch { /* ignore parse errors */ }
+                        }
+                    }
+                }
+                resolve(result || { status: 'success' })
+            }).catch(reject)
+        })
+    },
 };
 
 export const documentsApi = {
@@ -108,35 +137,9 @@ export const chunksApi = {
     }
 };
 
-export const suggestApi = {
-    profileDocument: async (text: string) => {
-        const response = await apiClient.post('/api/v1/suggest/profile', { text });
-        return response.data;
-    },
-    recommend: async (text: string) => {
-        const response = await apiClient.post('/api/v1/suggest/recommend', { text });
-        return response.data;
-    },
-    explain: async (recommendation: any) => {
-        const response = await apiClient.post('/api/v1/suggest/explain', recommendation);
-        return response.data;
-    },
-};
-
 export const embeddingsApi = {
     getModels: async () => {
         const response = await apiClient.get('/api/v1/embeddings/models');
-        return response.data;
-    },
-};
-
-export const evaluateApi = {
-    run: async (data: { question: string; ground_truth?: string }) => {
-        const response = await apiClient.post('/api/v1/evaluate/run', data);
-        return response.data;
-    },
-    chunkQuality: async (data?: { chunks?: string[] }) => {
-        const response = await apiClient.post('/api/v1/evaluate/chunk-quality', data || {});
         return response.data;
     },
 };
@@ -261,6 +264,18 @@ export const projectsApi = {
         );
         return data;
     },
+    getSampleQueries: async (id: string) => {
+        const response = await apiClient.get(`/api/v1/projects/${id}/sample-queries`);
+        return response.data;
+    },
+    validateRag: async (id: string) => {
+        const response = await apiClient.post(`/api/v1/projects/${id}/validate`);
+        return response.data;
+    },
+    llmJudge: async (id: string, query: string, chunks: any[]) => {
+        const response = await apiClient.post(`/api/v1/projects/${id}/llm-judge`, { query, chunks });
+        return response.data;
+    },
 };
 
 export const queryApi = {
@@ -293,13 +308,4 @@ export const analyzerApi = {
         });
         return response.data;
     },
-    applyPresetFromAnalysis: async (data: { document_id?: string, config: any }) => {
-        const response = await apiClient.post('/api/v1/presets/default/apply', data.config, {
-            params: {
-                document_id: data.document_id,
-                pipeline_name: `Analysis Result - ${new Date().toLocaleDateString()}`
-            }
-        });
-        return response.data;
-    }
 };

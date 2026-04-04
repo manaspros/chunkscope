@@ -19,6 +19,7 @@ import {
     Eye,
     Archive,
     ArchiveRestore,
+    Database,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { FileUploadZone, isZipFile } from '@/components/ui/file-upload-zone';
@@ -580,23 +581,40 @@ export default function ProjectDetailPage() {
                         <div className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm space-y-3">
                             <h2 className="text-sm font-bold text-gray-700 mb-1">Actions</h2>
 
-                            {/* AI Analysis - the main action */}
-                            <button
-                                onClick={handleAiDeepAnalysis}
-                                disabled={aiDeepAnalyzing || project.total_files === 0}
-                                className="w-full flex flex-col items-center justify-center gap-1 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 text-xs font-bold transition-all disabled:opacity-40"
-                            >
-                                <div className="flex items-center gap-2">
-                                    {aiDeepAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <BrainCircuit className="w-4 h-4 text-blue-600" />}
-                                    <span>AI Analysis</span>
+                            {/* AI Analysis - show badge if done, button if not */}
+                            {project?.analysis_result ? (
+                                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                            <span className="text-sm font-semibold text-emerald-800">AI Analysis Complete</span>
+                                        </div>
+                                        <span className="text-[10px] text-emerald-500">
+                                            {project.analysis_result.analyzed_at
+                                                ? new Date(project.analysis_result.analyzed_at).toLocaleDateString()
+                                                : ''}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-emerald-600 mt-1">Pipeline recommendation ready. Click &quot;Build Pipeline&quot; to proceed.</p>
                                 </div>
-                                {aiDeepAnalyzing && aiDeepStep && (
-                                    <span className="text-[10px] text-blue-500">{aiDeepStep}</span>
-                                )}
-                                {!aiDeepAnalyzing && (
-                                    <span className="text-[9px] text-gray-400 font-normal">AI reads your data and selects the optimal pipeline</span>
-                                )}
-                            </button>
+                            ) : (
+                                <button
+                                    onClick={handleAiDeepAnalysis}
+                                    disabled={aiDeepAnalyzing || project.total_files === 0}
+                                    className="w-full flex flex-col items-center justify-center gap-1 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 text-xs font-bold transition-all disabled:opacity-40"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        {aiDeepAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <BrainCircuit className="w-4 h-4 text-blue-600" />}
+                                        <span>AI Analysis</span>
+                                    </div>
+                                    {aiDeepAnalyzing && aiDeepStep && (
+                                        <span className="text-[10px] text-blue-500">{aiDeepStep}</span>
+                                    )}
+                                    {!aiDeepAnalyzing && (
+                                        <span className="text-[9px] text-gray-400 font-normal">AI reads your data and selects the optimal pipeline</span>
+                                    )}
+                                </button>
+                            )}
 
                             <Link
                                 href="/pipeline"
@@ -605,6 +623,40 @@ export default function ProjectDetailPage() {
                                 Open Pipeline Builder
                                 <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
+
+                            {/* Build Pipeline shortcut - always visible when recommendation exists */}
+                            {pipelineRec && (
+                                <button
+                                    onClick={handleBuildPipeline}
+                                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gray-900 text-white hover:bg-gray-800 text-xs font-bold transition-all"
+                                >
+                                    Build Pipeline
+                                    <ArrowRight className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+
+                            {/* Chunk status */}
+                            {project?.total_chunks > 0 && (
+                                <div className="p-4 rounded-xl bg-blue-50 border border-blue-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Database className="w-4 h-4 text-blue-600" />
+                                        <span className="text-sm font-semibold text-blue-800">
+                                            {project.total_chunks.toLocaleString()} Chunks Ready
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-blue-600 mb-3">
+                                        Your data is indexed and ready for querying. No need to re-run the pipeline.
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => router.push(`/pipeline?projectId=${projectId}`)}
+                                            className="flex-1 py-2 text-xs font-medium text-blue-700 bg-white border border-blue-200 rounded-lg hover:bg-blue-50"
+                                        >
+                                            Open Pipeline
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Corpus Config Card */}

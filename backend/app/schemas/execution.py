@@ -30,6 +30,24 @@ class PipelineExecuteRequest(BaseModel):
     options: ExecutionOptions = Field(default_factory=ExecutionOptions)
 
 
+class ExecuteStepRequest(BaseModel):
+    """Request to execute a single pipeline step."""
+    node_id: str
+    node_type: str
+    config: dict[str, Any] = Field(default_factory=dict)
+    project_id: Optional[str] = Field(default=None, description="Project ID to find documents for chunking")
+
+
+class ExecuteStepResponse(BaseModel):
+    """Response from executing a single pipeline step."""
+    node_id: str
+    status: str = "complete"
+    result: Optional[dict[str, Any]] = None
+    error: Optional[str] = None
+    chunks_created: int = 0
+    embedded_chunks: int = 0
+
+
 # ============================================
 # Response Schemas
 # ============================================

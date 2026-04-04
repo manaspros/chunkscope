@@ -69,10 +69,10 @@ export function RerankerNode({ data, selected, id }: NodeProps) {
                             model: (PROVIDERS as any)[val].models[0].id
                         })}
                     >
-                        <SelectTrigger className="h-8 bg-black/20 border-white/5 text-xs">
+                        <SelectTrigger className="h-8 bg-gray-50 border-gray-200 text-xs">
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                        <SelectContent className="bg-white border-gray-200 text-gray-900">
                             <SelectItem value="cohere">Cohere (Cloud)</SelectItem>
                             <SelectItem value="cross-encoder">Cross-Encoder (Local)</SelectItem>
                             <SelectItem value="rrf">RRF (Algorithmic)</SelectItem>
@@ -86,10 +86,10 @@ export function RerankerNode({ data, selected, id }: NodeProps) {
                         value={modelId}
                         onValueChange={(val) => updateData({ model: val })}
                     >
-                        <SelectTrigger className="h-8 bg-black/20 border-white/5 text-xs">
+                        <SelectTrigger className="h-8 bg-gray-50 border-gray-200 text-xs">
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                        <SelectContent className="bg-white border-gray-200 text-gray-900">
                             {currentProvider.models.map((m: any) => (
                                 <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                             ))}
@@ -131,7 +131,7 @@ export function RerankerNode({ data, selected, id }: NodeProps) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 p-2 rounded bg-white/5 border border-white/10">
+                <div className="grid grid-cols-2 gap-2 p-2 rounded bg-gray-50 border border-gray-200">
                     <div className="flex items-center gap-1.5">
                         <TrendingUp className="w-3 h-3 text-green-400" />
                         <div className="flex flex-col">
@@ -154,7 +154,7 @@ export function RerankerNode({ data, selected, id }: NodeProps) {
                         placeholder="Search query..."
                         value={query}
                         onChange={(e) => updateData({ query: e.target.value })}
-                        className="h-8 bg-black/20 border-white/5 text-xs focus:ring-pink-500/20"
+                        className="h-8 bg-gray-50 border-gray-200 text-xs focus:ring-pink-500/30"
                     />
                     <p className="text-[9px] text-neutral-500">If empty, will use query from parent node.</p>
                 </div>

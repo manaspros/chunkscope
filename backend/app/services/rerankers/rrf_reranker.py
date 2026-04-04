@@ -42,23 +42,28 @@ class ReciprocalRankFusionReranker(BaseReranker):
         
         for ranking in rankings:
             for rank, doc in enumerate(ranking):
-                doc_id = doc.get("id") or doc.get("text") # Fallback to text if no ID
+                # Support both {"chunk": Chunk, "score": float} and {"id": ..., "text": ...} formats
+                chunk = doc.get("chunk")
+                if chunk and hasattr(chunk, "id"):
+                    doc_id = str(chunk.id)
+                else:
+                    doc_id = doc.get("id") or doc.get("text")
                 if not doc_id:
                     continue
-                    
+
                 if doc_id not in fused_scores:
                     fused_scores[doc_id] = 0.0
                     doc_map[doc_id] = doc
-                    
+
                 fused_scores[doc_id] += 1.0 / (self.k + rank + 1)
-                
+
         # Sort by fused score
         sorted_ids = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)
-        
+
         final_results = []
-        for doc_id, score in sorted_ids[:top_k]:
+        for doc_id, fused_score in sorted_ids[:top_k]:
             doc_copy = doc_map[doc_id].copy()
-            doc_copy["rerank_score"] = score
+            doc_copy["score"] = fused_score  # Use "score" key for consistency
             final_results.append(doc_copy)
             
         return final_results

@@ -322,7 +322,7 @@ function PipelineNodeInner({ id, data, selected, type }: NodeProps) {
                 {strategyId && (
                     <button
                         onClick={handleInfoClick}
-                        className="p-0.5 rounded hover:bg-black/5 transition-all text-gray-400 hover:text-gray-700"
+                        className="p-0.5 rounded hover:bg-gray-100 transition-all text-gray-400 hover:text-gray-700"
                         title="Strategy info"
                     >
                         <Info className="w-3 h-3" />
@@ -332,7 +332,7 @@ function PipelineNodeInner({ id, data, selected, type }: NodeProps) {
                 {hasPreview && (
                     <button
                         onClick={handlePreview}
-                        className="p-0.5 rounded hover:bg-black/5 transition-colors"
+                        className="p-0.5 rounded hover:bg-gray-100 transition-colors"
                         title="View preview"
                     >
                         <Eye className="w-3 h-3 text-gray-400" />

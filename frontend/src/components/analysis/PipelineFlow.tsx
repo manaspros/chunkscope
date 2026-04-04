@@ -103,10 +103,10 @@ function confidenceBgColor(c: number): string {
 
 const InputNode = memo(function InputNode(_props: NodeProps) {
     return (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-gray-900 text-white shadow-md">
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white text-gray-900 border border-gray-200 shadow-md">
             <Upload className="w-3.5 h-3.5" />
             <span className="text-xs font-bold tracking-wide">Your Data</span>
-            <Handle type="source" position={Position.Right} className="!bg-gray-600 !w-2 !h-2 !border-0" />
+            <Handle type="source" position={Position.Right} className="!bg-gray-300 !w-2 !h-2 !border-0" />
         </div>
     );
 });
@@ -117,8 +117,8 @@ const InputNode = memo(function InputNode(_props: NodeProps) {
 
 const OutputNode = memo(function OutputNode(_props: NodeProps) {
     return (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-gray-900 text-white shadow-md">
-            <Handle type="target" position={Position.Left} className="!bg-gray-600 !w-2 !h-2 !border-0" />
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white text-gray-900 border border-gray-200 shadow-md">
+            <Handle type="target" position={Position.Left} className="!bg-gray-300 !w-2 !h-2 !border-0" />
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-xs font-bold tracking-wide">RAG Ready</span>
         </div>

@@ -60,10 +60,10 @@ export function EmbedderNode({ data, selected, id }: NodeProps) {
                         value={provider}
                         onValueChange={(val) => updateData({ provider: val, model: (PROVIDERS as any)[val].models[0].id })}
                     >
-                        <SelectTrigger className="h-8 bg-black/20 border-white/5 text-xs">
+                        <SelectTrigger className="h-8 bg-gray-50 border-gray-200 text-xs">
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                        <SelectContent className="bg-white border-gray-200 text-gray-900">
                             <SelectItem value="openai">OpenAI</SelectItem>
                             <SelectItem value="cohere">Cohere</SelectItem>
                             <SelectItem value="local">Local (Free)</SelectItem>
@@ -77,10 +77,10 @@ export function EmbedderNode({ data, selected, id }: NodeProps) {
                         value={modelId}
                         onValueChange={(val) => updateData({ model: val })}
                     >
-                        <SelectTrigger className="h-8 bg-black/20 border-white/5 text-xs">
+                        <SelectTrigger className="h-8 bg-gray-50 border-gray-200 text-xs">
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                        <SelectContent className="bg-white border-gray-200 text-gray-900">
                             {currentProvider.models.map((m: any) => (
                                 <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                             ))}
@@ -88,13 +88,13 @@ export function EmbedderNode({ data, selected, id }: NodeProps) {
                     </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5 mt-2">
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200 mt-2">
                     <div className="text-[10px] text-neutral-500">
-                        <span className="block font-bold text-neutral-400 capitalize">Dimensions</span>
+                        <span className="block font-bold text-gray-500 capitalize">Dimensions</span>
                         <span className="text-purple-400">{(currentModel as any).name.match(/\d+d/)?.[0] || '1536'}</span>
                     </div>
                     <div className="text-[10px] text-neutral-500 text-right">
-                        <span className="block font-bold text-neutral-400 capitalize">Cost</span>
+                        <span className="block font-bold text-gray-500 capitalize">Cost</span>
                         <span className={provider === 'local' ? 'text-green-400' : 'text-amber-400'}>
                             {provider === 'local' ? 'FREE' : `$${currentModel.cost}/1M tok`}
                         </span>

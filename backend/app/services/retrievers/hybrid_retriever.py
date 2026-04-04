@@ -21,35 +21,36 @@ class HybridRetriever(BaseRetriever):
         self.alpha = alpha
 
     async def retrieve(
-        self, 
-        query: str, 
-        top_k: int = 10, 
+        self,
+        query: str,
+        top_k: int = 10,
         document_id: UUID = None,
+        project_id: UUID = None,
         query_embedding: List[float] = None,
         **kwargs
     ) -> List[Dict[str, Any]]:
         """Perform hybrid retrieval."""
         alpha = kwargs.get("alpha", self.alpha)
-        
+
         # 1. Get vector search results
         vector_results = []
         if alpha > 0 and query_embedding:
-            vector_results = await self._vector_search(query_embedding, top_k * 2, document_id)
-            
+            vector_results = await self._vector_search(query_embedding, top_k * 2, document_id, project_id)
+
         # 2. Get keyword search results
         keyword_results = []
         if alpha < 1:
-            keyword_results = await self._keyword_search(query, top_k * 2, document_id)
-            
+            keyword_results = await self._keyword_search(query, top_k * 2, document_id, project_id)
+
         # 3. Combine results
         combined = self._combine_results(vector_results, keyword_results, alpha, top_k)
-        
+
         return combined
 
-    async def _vector_search(self, embedding: List[float], limit: int, document_id: UUID = None) -> List[Dict]:
+    async def _vector_search(self, embedding: List[float], limit: int, document_id: UUID = None, project_id: UUID = None) -> List[Dict]:
         """Vector similarity search using pgvector."""
         embedding_str = f"[{','.join(map(str, embedding))}]"
-        
+
         query = (
             select(
                 Chunk,
@@ -58,23 +59,28 @@ class HybridRetriever(BaseRetriever):
             .order_by(text("score DESC"))
             .limit(limit)
         )
-        
+
         if document_id:
             query = query.where(Chunk.document_id == document_id)
-            
+        elif project_id:
+            query = query.join(Document, Chunk.document_id == Document.id).where(Document.project_id == project_id)
+
+        # Only search chunks that have embeddings
+        query = query.where(Chunk.embedding.isnot(None))
+
         result = await self.db.execute(query)
         return [{"chunk": row.Chunk, "score": float(row.score)} for row in result.all()]
 
-    async def _keyword_search(self, query_text: str, limit: int, document_id: UUID = None) -> List[Dict]:
+    async def _keyword_search(self, query_text: str, limit: int, document_id: UUID = None, project_id: UUID = None) -> List[Dict]:
         """Keyword search using PostgreSQL full-text search."""
         # Clean query for tsquery: join sanitized words with & operator
         words = [word.strip() for word in query_text.split() if word.strip()]
         query_words = " & ".join(words)
         if not query_words:
             return []
-            
+
         ts_query = func.to_tsquery('english', query_words)
-        
+
         rank_query = (
             select(
                 Chunk,
@@ -84,10 +90,12 @@ class HybridRetriever(BaseRetriever):
             .order_by(text("score DESC"))
             .limit(limit)
         )
-        
+
         if document_id:
             rank_query = rank_query.where(Chunk.document_id == document_id)
-            
+        elif project_id:
+            rank_query = rank_query.join(Document, Chunk.document_id == Document.id).where(Document.project_id == project_id)
+
         result = await self.db.execute(rank_query)
         return [{"chunk": row.Chunk, "score": float(row.score)} for row in result.all()]
 
