@@ -35,10 +35,10 @@ class ProjectUpdate(BaseModel):
 class ProjectResponse(BaseSchema, IDMixin, TimestampMixin):
     """Project response."""
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     total_files: int
     total_chunks: int
-    dominant_doc_type: Optional[str]
+    dominant_doc_type: Optional[str] = None
     corpus_config: dict
     status: str
     analysis_result: Optional[dict] = None
@@ -51,7 +51,7 @@ class ProjectFileInfo(BaseModel):
     filename: str
     original_filename: str
     file_type: str
-    file_size_bytes: Optional[int]
+    file_size_bytes: Optional[int] = None
     is_processed: bool
 
 

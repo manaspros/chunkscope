@@ -61,7 +61,7 @@ class PipelineUpdate(BaseModel):
 class PipelineResponse(BaseSchema, IDMixin, TimestampMixin):
     """Pipeline response."""
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     status: str
     nodes: list[PipelineNode]
     edges: list[PipelineEdge]

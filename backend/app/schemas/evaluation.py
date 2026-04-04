@@ -32,9 +32,9 @@ class EvaluationCreate(BaseModel):
 
 class EvaluationResponse(BaseSchema, IDMixin):
     """Evaluation response."""
-    name: Optional[str]
+    name: Optional[str] = None
     pipeline_id: UUID
-    test_dataset_id: Optional[UUID]
+    test_dataset_id: Optional[UUID] = None
     status: str
     aggregate_scores: dict[str, Any] = Field(default_factory=dict)
     total_queries: int = 0
@@ -50,11 +50,11 @@ class EvaluationResultResponse(BaseSchema, IDMixin):
     """Individual evaluation result."""
     evaluation_id: UUID
     query: str
-    expected_answer: Optional[str]
-    generated_answer: Optional[str]
+    expected_answer: Optional[str] = None
+    generated_answer: Optional[str] = None
     scores: dict[str, Any] = Field(default_factory=dict)
-    latency_ms: Optional[int]
-    cost_usd: Optional[float]
+    latency_ms: Optional[int] = None
+    cost_usd: Optional[float] = None
     created_at: datetime
 
 

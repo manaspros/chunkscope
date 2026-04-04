@@ -34,8 +34,8 @@ class DocumentResponse(BaseSchema, IDMixin, TimestampMixin):
     original_filename: str
     file_path: str
     file_type: str
-    file_size_bytes: Optional[int]
-    doc_metadata: dict[str, Any] = Field(serialization_alias="metadata")
+    file_size_bytes: Optional[int] = None
+    doc_metadata: dict[str, Any] = Field(default_factory=dict, serialization_alias="metadata")
     is_processed: bool
     chunk_count: int = 0
     
@@ -45,7 +45,7 @@ class DocumentResponse(BaseSchema, IDMixin, TimestampMixin):
 
 class DocumentDetailResponse(DocumentResponse):
     """Detailed document response with extracted text."""
-    extracted_text: Optional[str]
+    extracted_text: Optional[str] = None
 
     class Config:
         populate_by_name = True
@@ -65,11 +65,11 @@ class ChunkResponse(BaseSchema, IDMixin):
     document_id: UUID
     text: str
     chunk_index: int
-    chunking_method: Optional[str]
-    chunk_size: Optional[int]
-    chunk_overlap: Optional[int]
-    chunk_metadata: dict[str, Any] = Field(serialization_alias="metadata")
-    token_count: Optional[int]
+    chunking_method: Optional[str] = None
+    chunk_size: Optional[int] = None
+    chunk_overlap: Optional[int] = None
+    chunk_metadata: dict[str, Any] = Field(default_factory=dict, serialization_alias="metadata")
+    token_count: Optional[int] = None
     created_at: datetime
     
     class Config:

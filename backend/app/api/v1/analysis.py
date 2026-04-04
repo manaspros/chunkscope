@@ -35,6 +35,7 @@ class AnalysisResponse(BaseModel):
     recommended_config: Dict
     confidence_score: float
     reasoning: str
+    content_signals: Optional[Dict] = None
     pipeline_recommendation: Optional[Dict] = None
 
 
