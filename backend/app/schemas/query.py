@@ -18,6 +18,7 @@ class QueryRequest(BaseModel):
     
     # MMR search params
     lambda_mult: float = Field(default=0.5, ge=0.0, le=1.0, description="Diversity vs relevance for MMR")
+    fetch_k: int = Field(default=20, ge=1, le=200, description="Number of candidates to fetch before reranking/MMR")
     # Augmentation params
     augmentation_method: Optional[str] = Field(
         default=None, 
