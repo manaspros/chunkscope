@@ -3,7 +3,119 @@
 Base URL: `http://localhost:8000`
 Interactive docs: `http://localhost:8000/api/docs`
 
-## Core Endpoints
+## Project Endpoints
+
+The primary entry point for the application. All document management, analysis, and chunking flows through projects.
+
+### CRUD
+
+- `POST /api/v1/projects` - Create project
+  - Body: `{ "name": "...", "description": "..." }`
+  - Returns: ProjectResponse
+
+- `GET /api/v1/projects` - List projects
+  - Query: `?status=active` or `?status=archived`
+  - Returns: ProjectListResponse
+
+- `GET /api/v1/projects/{id}` - Get project with file list
+  - Returns: ProjectDetailResponse (includes files array)
+
+- `PATCH /api/v1/projects/{id}` - Update project
+  - Body: `{ "name": "...", "description": "...", "status": "active|archived" }`
+
+- `DELETE /api/v1/projects/{id}` - Delete project and all its documents
+
+### File Upload
+
+- `POST /api/v1/projects/{id}/upload` - Upload single file
+  - Form: `file` (multipart)
+  - Supported: PDF, TXT, MD, DOCX, HTML, CSV, JSON, XML, YAML, code files
+  - Upload is instant (no background processing; text extracted on-demand at chunk time)
+
+- `POST /api/v1/projects/{id}/upload-zip` - Upload and extract ZIP
+  - Form: `file` (multipart, .zip only)
+  - Extracts all supported file types from the archive
+
+- `POST /api/v1/projects/{id}/upload-folder` - Upload multiple files
+  - Form: `files` (multipart, multiple)
+  - Skips files that fail validation, returns count of successful uploads
+
+- `DELETE /api/v1/projects/{id}/files/{file_id}` - Remove file from project
+
+### Analysis
+
+Three analysis modes with increasing depth and cost:
+
+- `POST /api/v1/projects/{id}/analyze` - **Rule-based corpus analysis**
+  - Cost: $0.00 | Speed: <1s
+  - Runs document analyzer (20 regex content signals) on all files
+  - Feeds merged signals into pipeline recommender (rule-based)
+  - Persists result to `project.analysis_result`
+  - Returns: corpus summary, recommendation, confidence, reasoning, pipeline recommendation, per-file results
+
+- `POST /api/v1/projects/{id}/smart-analyze` - **Focused pipeline recommendation**
+  - Query: `?priority=accuracy&budget=moderate`
+  - Cost: $0.00 | Speed: <1s
+  - Computes content signals and feeds directly into pipeline recommender
+  - Priority options: `accuracy`, `speed`, `cost`
+  - Budget options: `low`, `moderate`, `high`
+  - Returns: corpus fingerprint, doc type, corpus size, full recommendation with techniques per stage
+
+- `POST /api/v1/projects/{id}/ai-analyze` - **AI-powered analysis**
+  - Query: `?model=gpt-4o-mini`
+  - Cost: ~$0.01-0.05 | Speed: 5-15s
+  - Step 1: Computes content signals (regex)
+  - Step 2: AI Profiler (LLM) -- stratified sampling + semantic understanding -> ContentProfile
+  - Step 3: AI Pipeline Selector (LLM) -- picks optimal pipeline from all available nodes
+  - Persists result to `project.analysis_result` and `project.content_profile`
+  - Returns: corpus fingerprint, content profile, doc type, corpus size, recommendation with reasoning and "why not" explanations
+
+### Chunking
+
+- `POST /api/v1/projects/{id}/chunk` - **On-demand chunking**
+  - Body: `{ "chunking_method": "recursive", "chunk_size": 512, "overlap": 50 }`
+  - Extracts text on-demand if not already done (no background processing needed)
+  - Removes existing chunks before re-chunking
+  - Returns: total chunks, config used, per-file results
+
+- `GET /api/v1/projects/{id}/chunks` - **Get all chunks** (paginated)
+  - Query: `?page=1&per_page=50`
+  - Returns: items (with filename, text, index, token count), total, page, per_page
+
+## Query
+
+- `POST /api/v1/query/` - Execute retrieval query
+  - Uses LiteLLM for query embedding (not hardcoded to OpenAI)
+  - Body:
+    ```json
+    {
+      "query": "What is...",
+      "retrieval_method": "hybrid|mmr|parent_document|keyword|dense",
+      "augmentation_method": "multi_query|hyde|expansion",
+      "top_k": 5,
+      "document_id": "optional-uuid",
+      "alpha": 0.5,
+      "lambda_mult": 0.5,
+      "fetch_k": 20,
+      "num_variants": 3
+    }
+    ```
+  - Returns: query, results (chunks with scores), retrieval method, total results
+
+## Standalone Analysis
+
+These endpoints work without projects (upload files directly).
+
+- `POST /api/v1/analyze` - Analyze single document
+  - Form: `file` (multipart)
+  - Saves document, runs analysis, includes pipeline recommendation
+  - Returns: AnalysisResponse (document_id, document_type, structure, density, recommended_config, confidence, reasoning, pipeline_recommendation)
+
+- `POST /api/v1/analyze/corpus` - Analyze multiple files as corpus
+  - Form: `files` (multipart, multiple)
+  - Returns: CorpusAnalysisResponse (corpus_summary, corpus_recommendation, confidence, reasoning, per-file results)
+
+## Core Endpoints (Unchanged)
 
 ### Health
 - `GET /api/v1/health` - Health check
@@ -73,7 +185,7 @@ Interactive docs: `http://localhost:8000/api/docs`
 - `POST /api/v1/presets/initialize` - Load built-in presets
 
 ### Other
-- `POST /api/v1/query/` - Execute query against pipeline
-- `POST /api/v1/analyze` - Analyze document
-- `POST /api/v1/preview/chunking` - Preview chunking config
 - `POST /api/v1/rerank/` - Rerank documents
+- `POST /api/v1/preview/chunking` - Preview chunking config
+- `GET /api/v1/config/validation-rules` - Pipeline validation rules
+- `GET /api/v1/config/available-models` - Available models
