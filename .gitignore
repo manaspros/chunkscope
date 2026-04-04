@@ -48,10 +48,19 @@ frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
 
-# Uploads (keep directory, ignore files)
-uploads/*.pdf
-uploads/*.txt
+# Uploads (keep directory structure, ignore all uploaded files)
+uploads/*
+!uploads/.gitkeep
 
-# Logs
+# Logs and debug output
 *.log
 test.db
+debug_log.txt
+
+# Temporary test/debug output files (root and backend)
+test_*.txt
+test_*.log
+*_error.txt
+*_error.log
+*_output.txt
+*_output.log

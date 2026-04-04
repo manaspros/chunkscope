@@ -23,9 +23,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className="dark scroll-smooth">
-            <body className={cn(inter.variable, rajdhani.variable, jetbrainsMono.variable, "bg-background text-foreground min-h-screen antialiased selection:bg-amber-500/30 font-sans")}>
-                <GlobalBackground />
+        <html lang="en" className="scroll-smooth">
+            <body className={cn(inter.variable, rajdhani.variable, jetbrainsMono.variable, "bg-gray-50 text-foreground min-h-screen antialiased selection:bg-blue-100 font-sans")}>
                 <GlobalErrorBoundary>
                     {children}
                 </GlobalErrorBoundary>

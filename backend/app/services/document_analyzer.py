@@ -246,7 +246,106 @@ class DocumentAnalyzer:
 
         # --- totals -----------------------------------------------------
         words = text.split()
-        total_words = len(words)
+        total_words = len(words) or 1  # avoid division by zero
+
+        # --- formula_ratio: lines with LaTeX or math operators ----------
+        latex_pattern = re.compile(
+            r"\$.*\$|\\frac|\\int|\\sum|\\begin\{equation\}",
+        )
+        math_operator_pattern = re.compile(
+            r"(?:\d\s*[=+\-*/]\s*\d)"
+        )
+        formula_lines = 0
+        for line in lines:
+            if latex_pattern.search(line):
+                formula_lines += 1
+            elif math_operator_pattern.search(line):
+                formula_lines += 1
+        formula_ratio = formula_lines / total_lines
+
+        # --- cross_ref_ratio: lines with cross-reference phrases --------
+        cross_ref_pattern = re.compile(
+            r"see\s+section|as\s+in\s+chapter|refer\s+to|as\s+mentioned\s+in|"
+            r"as\s+shown\s+in|see\s+figure|see\s+table|cf\.|ibid|"
+            r"subject\s+to\s+section|pursuant\s+to|in\s+section\s+\d|"
+            r"under\s+section|per\s+section|obligations\s+in\s+section",
+            re.IGNORECASE,
+        )
+        cross_ref_lines = sum(1 for l in lines if cross_ref_pattern.search(l))
+        cross_ref_ratio = cross_ref_lines / total_lines
+
+        # --- named_entity_density: consecutive capitalized words --------
+        # Match 2+ consecutive capitalized words NOT at sentence start
+        # We look for patterns mid-sentence (preceded by lowercase or punctuation + space)
+        ne_pattern = re.compile(r"(?<=[a-z,;:]\s)(?:[A-Z][a-z]+\s+){1,}[A-Z][a-z]+")
+        ne_matches = ne_pattern.findall(text)
+        named_entity_count = sum(len(m.split()) for m in ne_matches)
+        named_entity_density = named_entity_count / total_words
+
+        # --- question_density: lines ending with ? ----------------------
+        question_lines = sum(1 for l in lines if l.strip().endswith("?"))
+        question_density = question_lines / total_lines
+
+        # --- dialogue_ratio: lines with dialogue indicators -------------
+        dialogue_pattern = re.compile(
+            r'["\u201c\u201d]|'
+            r"^\s*\w+\s*:|"
+            r'\bQ\s*:|A\s*:|'
+            r'\bsaid\b|\basked\b',
+            re.IGNORECASE,
+        )
+        dialogue_lines = sum(1 for l in lines if dialogue_pattern.search(l))
+        dialogue_ratio = dialogue_lines / total_lines
+
+        # --- heading_depth: max depth of headings (1-6 scale) ----------
+        heading_depth = 0
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                level = len(stripped) - len(stripped.lstrip("#"))
+                level = min(level, 6)
+                heading_depth = max(heading_depth, level)
+            elif (len(stripped) >= 3 and stripped == stripped.upper()
+                  and re.search(r"[A-Z]", stripped) and heading_depth < 1):
+                heading_depth = 1
+        heading_depth = min(heading_depth, 6)
+
+        # --- forward_references: lines with forward-looking phrases -----
+        forward_ref_pattern = re.compile(
+            r"we\s+will\s+see|later\s+in|in\s+the\s+next|upcoming\s+section|discussed\s+below",
+            re.IGNORECASE,
+        )
+        forward_ref_lines = sum(1 for l in lines if forward_ref_pattern.search(l))
+        forward_references = forward_ref_lines / total_lines
+
+        # --- back_references: lines with backward-looking phrases -------
+        back_ref_pattern = re.compile(
+            r"as\s+mentioned|recall\s+that|as\s+we\s+saw|previously|as\s+discussed|in\s+the\s+previous",
+            re.IGNORECASE,
+        )
+        back_ref_lines = sum(1 for l in lines if back_ref_pattern.search(l))
+        back_references = back_ref_lines / total_lines
+
+        # --- comparison_patterns: lines with comparison phrases ---------
+        comparison_pattern = re.compile(
+            r"\bvs\b|compared\s+to|unlike|in\s+contrast|whereas|on\s+the\s+other\s+hand|difference\s+between",
+            re.IGNORECASE,
+        )
+        comparison_lines = sum(1 for l in lines if comparison_pattern.search(l))
+        comparison_patterns = comparison_lines / total_lines
+
+        # --- causal_chains: lines with causal phrases -------------------
+        causal_pattern = re.compile(
+            r"\bbecause\b|\btherefore\b|\bconsequently\b|as\s+a\s+result|leads\s+to|due\s+to|\bhence\b|\bthus\b",
+            re.IGNORECASE,
+        )
+        causal_lines = sum(1 for l in lines if causal_pattern.search(l))
+        causal_chains = causal_lines / total_lines
+
+        # --- vocabulary_diversity: unique words / total words -----------
+        lower_words = [w.lower() for w in words]
+        unique_words = len(set(lower_words))
+        vocabulary_diversity = unique_words / total_words
 
         return {
             "heading_density": round(heading_density, 4),
@@ -258,6 +357,17 @@ class DocumentAnalyzer:
             "total_words": total_words,
             "total_lines": total_lines,
             "total_paragraphs": total_paragraphs,
+            "formula_ratio": round(formula_ratio, 4),
+            "cross_ref_ratio": round(cross_ref_ratio, 4),
+            "named_entity_density": round(named_entity_density, 4),
+            "question_density": round(question_density, 4),
+            "dialogue_ratio": round(dialogue_ratio, 4),
+            "heading_depth": heading_depth,
+            "forward_references": round(forward_references, 4),
+            "back_references": round(back_references, 4),
+            "comparison_patterns": round(comparison_patterns, 4),
+            "causal_chains": round(causal_chains, 4),
+            "vocabulary_diversity": round(vocabulary_diversity, 4),
         }
 
     def _recommend_from_signals(self, signals: Dict, doc_type: str) -> Dict:
@@ -271,6 +381,16 @@ class DocumentAnalyzer:
         """
         embedding_model = "text-embedding-3-small"
 
+        # Helper to append formula preservation note
+        def _formula_note(reasoning: str) -> str:
+            if signals.get("formula_ratio", 0) > 0.01:
+                reasoning += (
+                    f" Note: document contains mathematical formulas "
+                    f"({signals['formula_ratio']:.1%} of lines). "
+                    "Chunk boundaries should avoid splitting equations."
+                )
+            return reasoning
+
         # 1. Heavy code
         if signals.get("code_ratio", 0) > 0.3:
             return {
@@ -278,21 +398,36 @@ class DocumentAnalyzer:
                 "chunk_size": 400,
                 "overlap": 0,
                 "embedding_model": embedding_model,
-                "reasoning": (
+                "reasoning": _formula_note(
                     f"High code density ({signals['code_ratio']:.0%}). "
                     "Using code-aware chunking with zero overlap to preserve function boundaries."
                 ),
                 "signals_used": ["code_ratio"],
             }
 
-        # 2. Heading-rich prose
+        # 2. Deep hierarchical structure
+        if signals.get("heading_depth", 0) >= 3 and signals.get("avg_paragraph_sentences", 0) > 3:
+            return {
+                "chunking_method": "hierarchical",
+                "chunk_size": 700,
+                "overlap": 100,
+                "embedding_model": embedding_model,
+                "reasoning": _formula_note(
+                    f"Deep heading hierarchy (depth {signals['heading_depth']}) "
+                    f"with substantial paragraphs ({signals['avg_paragraph_sentences']:.1f} sentences avg). "
+                    "Hierarchical chunking preserves nested section structure."
+                ),
+                "signals_used": ["heading_depth", "avg_paragraph_sentences"],
+            }
+
+        # 3. Heading-rich prose
         if signals.get("heading_density", 0) > 0.03 and signals.get("avg_paragraph_sentences", 0) > 2:
             return {
                 "chunking_method": "heading_based",
                 "chunk_size": 600,
                 "overlap": 75,
                 "embedding_model": embedding_model,
-                "reasoning": (
+                "reasoning": _formula_note(
                     f"Document has clear heading structure (density {signals['heading_density']:.1%}) "
                     f"with substantial paragraphs ({signals['avg_paragraph_sentences']:.1f} sentences avg). "
                     "Heading-based chunking preserves section boundaries."
@@ -300,28 +435,42 @@ class DocumentAnalyzer:
                 "signals_used": ["heading_density", "avg_paragraph_sentences"],
             }
 
-        # 3. Dense long-sentence prose (legal/academic)
+        # 4. Question-heavy content (FAQ, interviews, Q&A)
+        if signals.get("question_density", 0) > 0.05:
+            return {
+                "chunking_method": "sentence_window",
+                "chunk_size": 300,
+                "overlap": 40,
+                "embedding_model": embedding_model,
+                "reasoning": _formula_note(
+                    f"High question density ({signals['question_density']:.1%} of lines). "
+                    "Sentence-window chunking keeps each question-answer pair focused."
+                ),
+                "signals_used": ["question_density"],
+            }
+
+        # 5. Dense long-sentence prose (legal/academic)
         if signals.get("avg_sentence_length", 0) > 25:
             return {
                 "chunking_method": "semantic",
                 "chunk_size": 400,
                 "overlap": 80,
                 "embedding_model": embedding_model,
-                "reasoning": (
+                "reasoning": _formula_note(
                     f"Dense prose with long sentences ({signals['avg_sentence_length']:.0f} words avg). "
                     "Semantic chunking with high overlap to avoid splitting complex clauses."
                 ),
                 "signals_used": ["avg_sentence_length"],
             }
 
-        # 4. Short, fragmented text (chat logs, bullet lists, FAQs)
+        # 6. Short, fragmented text (chat logs, bullet lists, FAQs)
         if signals.get("avg_paragraph_sentences", 0) < 3 and signals.get("avg_sentence_length", 0) < 15:
             return {
                 "chunking_method": "sentence_window",
                 "chunk_size": 256,
                 "overlap": 30,
                 "embedding_model": embedding_model,
-                "reasoning": (
+                "reasoning": _formula_note(
                     f"Short paragraphs ({signals['avg_paragraph_sentences']:.1f} sentences) "
                     f"and brief sentences ({signals['avg_sentence_length']:.0f} words). "
                     "Sentence-window chunking keeps each chunk focused."
@@ -329,27 +478,27 @@ class DocumentAnalyzer:
                 "signals_used": ["avg_paragraph_sentences", "avg_sentence_length"],
             }
 
-        # 5. Table-heavy content
+        # 7. Table-heavy content
         if signals.get("table_ratio", 0) > 0.1:
             return {
                 "chunking_method": "recursive",
                 "chunk_size": 800,
                 "overlap": 100,
                 "embedding_model": embedding_model,
-                "reasoning": (
+                "reasoning": _formula_note(
                     f"Significant table content ({signals['table_ratio']:.0%} of lines). "
                     "Larger recursive chunks to keep table rows together."
                 ),
                 "signals_used": ["table_ratio"],
             }
 
-        # 6. Fallback
+        # 8. Fallback
         return {
             "chunking_method": "recursive",
             "chunk_size": 512,
             "overlap": 50,
             "embedding_model": embedding_model,
-            "reasoning": (
+            "reasoning": _formula_note(
                 f"General {doc_type} document with no dominant structural signal. "
                 "Using balanced recursive chunking."
             ),

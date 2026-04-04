@@ -4,10 +4,12 @@ CRUD operations and file management for projects
 """
 import pathlib
 from collections import Counter
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
+from app.services.document_analyzer import document_analyzer as _document_analyzer
 from sqlalchemy import func, select
 
 from app.core.errors import BadRequestError, NotFoundError
@@ -43,6 +45,36 @@ async def _get_project(db, project_id: UUID) -> Project:
     if not project:
         raise NotFoundError("Project", str(project_id))
     return project
+
+
+def _merge_signals(per_file_signals: list[dict], total_words: int = 0) -> dict:
+    """Merge per-file content signals into a single corpus-level signal dict."""
+    if not per_file_signals:
+        return {}
+    total_weight = sum(s.get("total_words", 1) for s in per_file_signals) or 1
+    if not total_words:
+        total_words = sum(s.get("total_words", 0) for s in per_file_signals)
+    return {
+        "heading_density": max(s.get("heading_density", 0) for s in per_file_signals),
+        "code_ratio": max(s.get("code_ratio", 0) for s in per_file_signals),
+        "table_ratio": max(s.get("table_ratio", 0) for s in per_file_signals),
+        "list_ratio": max(s.get("list_ratio", 0) for s in per_file_signals),
+        "avg_sentence_length": round(
+            sum(
+                s.get("avg_sentence_length", 0) * s.get("total_words", 1)
+                for s in per_file_signals
+            ) / total_weight,
+            1,
+        ),
+        "avg_paragraph_sentences": round(
+            sum(s.get("avg_paragraph_sentences", 0) for s in per_file_signals)
+            / len(per_file_signals),
+            1,
+        ),
+        "total_words": total_words,
+        "total_lines": sum(s.get("total_lines", 0) for s in per_file_signals),
+        "total_paragraphs": sum(s.get("total_paragraphs", 0) for s in per_file_signals),
+    }
 
 
 async def _update_project_stats(db, project_id: UUID) -> None:
@@ -197,7 +229,6 @@ async def delete_project(
 @router.post("/{project_id}/upload", status_code=status.HTTP_201_CREATED)
 async def upload_file_to_project(
     project_id: UUID,
-    background_tasks: BackgroundTasks,
     db: DbSession,
     file: UploadFile = File(..., description="File to upload into the project"),
 ):
@@ -210,7 +241,7 @@ async def upload_file_to_project(
     # Save
     stored_filename, file_path, file_size = await document_service.save_file(file, file_type)
 
-    # Create document linked to project
+    # Create document linked to project (instantly ready; text extracted on-demand at chunk time)
     document = Document(
         filename=stored_filename,
         original_filename=file.filename or "unknown",
@@ -218,7 +249,7 @@ async def upload_file_to_project(
         file_type=file_type.value,
         file_size_bytes=file_size,
         doc_metadata={},
-        is_processed=False,
+        is_processed=True,
         project_id=project_id,
     )
     db.add(document)
@@ -228,9 +259,6 @@ async def upload_file_to_project(
     # Update stats
     await _update_project_stats(db, project_id)
 
-    # Background processing
-    background_tasks.add_task(document_service.process_document, document.id)
-
     logger.info("file_uploaded_to_project", project_id=str(project_id), document_id=str(document.id))
     return DocumentResponse.model_validate(document)
 
@@ -238,7 +266,6 @@ async def upload_file_to_project(
 @router.post("/{project_id}/upload-zip", status_code=status.HTTP_201_CREATED)
 async def upload_zip_to_project(
     project_id: UUID,
-    background_tasks: BackgroundTasks,
     db: DbSession,
     file: UploadFile = File(..., description="ZIP archive to extract into the project"),
 ):
@@ -273,13 +300,12 @@ async def upload_zip_to_project(
             file_type=entry_type.value,
             file_size_bytes=entry["size"],
             doc_metadata={"source_zip": file.filename, "zip_path": entry["original_path"]},
-            is_processed=False,
+            is_processed=True,
             project_id=project_id,
         )
         db.add(doc)
         await db.flush()
         await db.refresh(doc)
-        background_tasks.add_task(document_service.process_document, doc.id)
         created_docs.append(DocumentResponse.model_validate(doc))
 
     await _update_project_stats(db, project_id)
@@ -291,7 +317,6 @@ async def upload_zip_to_project(
 @router.post("/{project_id}/upload-folder", status_code=status.HTTP_201_CREATED)
 async def upload_folder_to_project(
     project_id: UUID,
-    background_tasks: BackgroundTasks,
     db: DbSession,
     files: list[UploadFile] = File(..., description="Multiple files from a folder"),
 ):
@@ -311,13 +336,12 @@ async def upload_folder_to_project(
                 file_type=file_type.value,
                 file_size_bytes=file_size,
                 doc_metadata={},
-                is_processed=False,
+                is_processed=True,
                 project_id=project_id,
             )
             db.add(doc)
             await db.flush()
             await db.refresh(doc)
-            background_tasks.add_task(document_service.process_document, doc.id)
             created_docs.append(DocumentResponse.model_validate(doc))
         except Exception as e:
             logger.error("folder_file_upload_failed", filename=uploaded_file.filename, error=str(e))
@@ -360,7 +384,6 @@ async def remove_file_from_project(
 @router.post("/{project_id}/analyze")
 async def analyze_project(
     project_id: UUID,
-    background_tasks: BackgroundTasks,
     db: DbSession,
 ):
     """Analyze all files in the project as a corpus and store recommendation."""
@@ -433,28 +456,7 @@ async def analyze_project(
 
     # Merge content signals across files and derive corpus recommendation
     if per_file_signals:
-        total_weight = sum(s.get("total_words", 1) for s in per_file_signals) or 1
-        merged_signals = {
-            "heading_density": max(s.get("heading_density", 0) for s in per_file_signals),
-            "code_ratio": max(s.get("code_ratio", 0) for s in per_file_signals),
-            "table_ratio": max(s.get("table_ratio", 0) for s in per_file_signals),
-            "list_ratio": max(s.get("list_ratio", 0) for s in per_file_signals),
-            "avg_sentence_length": round(
-                sum(
-                    s.get("avg_sentence_length", 0) * s.get("total_words", 1)
-                    for s in per_file_signals
-                ) / total_weight,
-                1,
-            ),
-            "avg_paragraph_sentences": round(
-                sum(s.get("avg_paragraph_sentences", 0) for s in per_file_signals)
-                / len(per_file_signals),
-                1,
-            ),
-            "total_words": total_words,
-            "total_lines": sum(s.get("total_lines", 0) for s in per_file_signals),
-            "total_paragraphs": sum(s.get("total_paragraphs", 0) for s in per_file_signals),
-        }
+        merged_signals = _merge_signals(per_file_signals, total_words)
         best_config = document_analyzer._recommend_from_signals(merged_signals, dominant_type)
         reasoning_text = best_config.pop("reasoning", "")
         best_config.pop("signals_used", None)
@@ -477,9 +479,44 @@ async def analyze_project(
         f"with {best_config.get('chunk_size', 512)} token chunks."
     )
 
+    # Get multi-technique pipeline recommendation
+    pipeline_rec = None
+    try:
+        from app.services.pipeline_recommender import pipeline_recommender
+        pipeline_rec = pipeline_recommender.recommend(
+            signals=merged_signals,
+            doc_type=dominant_type,
+            corpus_size=corpus_size,
+        )
+        pipeline_rec = pipeline_rec.to_dict()
+    except Exception as e:
+        logger.warning("pipeline_recommendation_failed", error=str(e))
+
     # Store corpus config on project
     project.corpus_config = best_config
     project.dominant_doc_type = dominant_type
+
+    # Persist full analysis result so it survives page refreshes
+    project.analysis_result = {
+        "corpus_summary": {
+            "total_files": len(docs),
+            "successful_files": sum(1 for f in file_results if f["status"] == "done"),
+            "failed_files": sum(1 for f in file_results if f["status"] == "error"),
+            "dominant_doc_type": dominant_type,
+            "doc_types": dict(type_counts),
+            "has_tables": has_tables,
+            "has_code": has_code,
+            "has_headings": has_headings,
+            "corpus_size": corpus_size,
+        },
+        "corpus_recommendation": best_config,
+        "confidence_score": avg_confidence,
+        "reasoning": reasoning,
+        "pipeline_recommendation": pipeline_rec,
+        "files": file_results,
+        "analyzed_at": datetime.utcnow().isoformat(),
+    }
+
     db.add(project)
     await db.flush()
 
@@ -498,7 +535,188 @@ async def analyze_project(
         "corpus_recommendation": best_config,
         "confidence_score": avg_confidence,
         "reasoning": reasoning,
+        "pipeline_recommendation": pipeline_rec,
         "files": file_results,
+    }
+
+
+@router.post("/{project_id}/smart-analyze")
+async def smart_analyze_project(
+    project_id: UUID,
+    db: DbSession,
+    priority: str = Query(default="accuracy"),
+    budget: str = Query(default="moderate"),
+):
+    """Get smart pipeline recommendation for a project based on its corpus fingerprint."""
+    project = await _get_project(db, project_id)
+
+    # Get all project documents
+    doc_q = select(Document).where(Document.project_id == project_id)
+    docs_result = await db.execute(doc_q)
+    docs = docs_result.scalars().all()
+
+    if not docs:
+        raise BadRequestError("Project has no files to analyze")
+
+    from app.services.document_analyzer import document_analyzer
+
+    # Compute signals for each file and merge
+    per_file_signals = []
+    doc_types = []
+    for doc in docs:
+        try:
+            content = document_analyzer._extract_content(doc.file_path)
+            signals = document_analyzer._compute_content_signals(content["full_text"])
+            per_file_signals.append(signals)
+
+            fast_result = document_analyzer._quick_classify(content["full_text"][:2000])
+            doc_types.append(fast_result[0] if fast_result else "general")
+        except Exception:
+            pass
+
+    if not per_file_signals:
+        raise BadRequestError("Could not analyze any files")
+
+    # Merge signals
+    merged_signals = _merge_signals(per_file_signals)
+
+    dominant_type = Counter(doc_types).most_common(1)[0][0] if doc_types else "general"
+    corpus_size = "small" if len(docs) < 100 else "medium" if len(docs) < 1000 else "large"
+
+    try:
+        from app.services.pipeline_recommender import pipeline_recommender
+
+        recommendation = pipeline_recommender.recommend(
+            signals=merged_signals,
+            doc_type=dominant_type,
+            corpus_size=corpus_size,
+            priority=priority,
+            budget=budget,
+        )
+        recommendation_dict = recommendation.to_dict()
+    except Exception as e:
+        logger.error("smart_analyze_pipeline_failed", error=str(e))
+        raise BadRequestError(f"Pipeline recommendation failed: {str(e)}")
+
+    return {
+        "project_id": str(project_id),
+        "corpus_fingerprint": merged_signals,
+        "doc_type": dominant_type,
+        "corpus_size": corpus_size,
+        "recommendation": recommendation_dict,
+    }
+
+
+@router.post("/{project_id}/ai-analyze")
+async def ai_analyze_project(
+    project_id: UUID,
+    db: DbSession,
+    model: str = Query(default="gpt-4o-mini", description="LLM model for analysis"),
+):
+    """
+    AI-powered corpus analysis: profiles the data semantically using an LLM,
+    then uses AI to select the optimal pipeline from available nodes.
+
+    This is the "smart" analysis that actually understands the content,
+    unlike the rule-based analysis which only counts patterns.
+    """
+    project = await _get_project(db, project_id)
+
+    # Get all project documents
+    doc_q = select(Document).where(Document.project_id == project_id)
+    docs_result = await db.execute(doc_q)
+    docs = docs_result.scalars().all()
+
+    if not docs:
+        raise BadRequestError("Project has no files to analyze")
+
+    from app.services.document_analyzer import document_analyzer
+
+    # 1. Extract content and compute signals for each file
+    doc_data: list[dict] = []
+    per_file_signals: list[dict] = []
+    doc_types: list[str] = []
+
+    for doc in docs:
+        try:
+            content = document_analyzer._extract_content(doc.file_path)
+            text = content.get("full_text", "")
+            if not text.strip():
+                continue
+
+            signals = document_analyzer._compute_content_signals(text)
+            per_file_signals.append(signals)
+
+            fast_result = document_analyzer._quick_classify(text[:2000])
+            dtype = fast_result[0] if fast_result else "general"
+            doc_types.append(dtype)
+
+            doc_data.append({
+                "text": text,
+                "filename": doc.original_filename,
+                "doc_type": dtype,
+            })
+        except Exception as e:
+            logger.error("ai_analyze_file_failed", filename=doc.original_filename, error=str(e))
+
+    if not doc_data:
+        raise BadRequestError("Could not extract content from any files")
+
+    # Merge signals
+    merged_signals = _merge_signals(per_file_signals)
+    dominant_type = Counter(doc_types).most_common(1)[0][0] if doc_types else "general"
+    corpus_size = "small" if len(docs) < 100 else "medium" if len(docs) < 1000 else "large"
+    total_words = merged_signals.get("total_words", 0)
+
+    # 2. AI Semantic Profiling - LLM understands what the data IS
+    from app.services.ai_profiler import ai_profiler
+
+    try:
+        profile = await ai_profiler.profile(
+            documents=doc_data,
+            total_files=len(docs),
+            total_words=total_words,
+            model=model,
+        )
+    except Exception as e:
+        logger.error("ai_profiling_failed", error=str(e))
+        raise BadRequestError(f"AI profiling failed: LLM service unavailable or returned invalid response. {str(e)}")
+
+    # 3. AI Pipeline Selection - LLM picks optimal pipeline from our nodes
+    from app.services.ai_pipeline_selector import ai_pipeline_selector
+
+    try:
+        recommendation = await ai_pipeline_selector.select(
+            profile=profile,
+            signals=merged_signals,
+            total_files=len(docs),
+            total_words=total_words,
+            corpus_size=corpus_size,
+            model=model,
+        )
+    except Exception as e:
+        logger.error("ai_pipeline_selection_failed", error=str(e))
+        raise BadRequestError(f"AI pipeline selection failed: LLM service unavailable or returned invalid response. {str(e)}")
+
+    # Persist AI analysis results so they survive page refreshes
+    project.content_profile = profile.to_dict()
+    project.analysis_result = {
+        "corpus_fingerprint": merged_signals,
+        "doc_type": dominant_type,
+        "corpus_size": corpus_size,
+        "recommendation": recommendation.to_dict(),
+        "analyzed_at": datetime.utcnow().isoformat(),
+    }
+    db.add(project)
+    await db.flush()
+
+    return {
+        "project_id": str(project_id),
+        "corpus_fingerprint": merged_signals,
+        "content_profile": profile.to_dict(),
+        "doc_type": dominant_type,
+        "corpus_size": corpus_size,
+        "recommendation": recommendation.to_dict(),
     }
 
 
@@ -506,18 +724,18 @@ async def analyze_project(
 async def chunk_project(
     project_id: UUID,
     config: dict,
-    background_tasks: BackgroundTasks,
     db: DbSession,
 ):
     """Chunk all files in the project with the given config."""
     project = await _get_project(db, project_id)
 
-    doc_q = select(Document).where(Document.project_id == project_id, Document.is_processed == True)
+    # Get all project documents
+    doc_q = select(Document).where(Document.project_id == project_id)
     docs_result = await db.execute(doc_q)
     docs = docs_result.scalars().all()
 
     if not docs:
-        raise BadRequestError("No processed files in the project to chunk")
+        raise BadRequestError("Project has no files")
 
     from app.services.chunker import apply_chunking
 
@@ -529,6 +747,17 @@ async def chunk_project(
     results = []
 
     for doc in docs:
+        # Extract text on-demand if not already done
+        if not doc.extracted_text:
+            try:
+                content = _document_analyzer._extract_content(doc.file_path)
+                doc.extracted_text = content.get("full_text", "")
+                db.add(doc)
+                await db.flush()
+            except Exception as e:
+                results.append({"document_id": str(doc.id), "filename": doc.original_filename, "chunks": 0, "status": "extraction_failed", "error": str(e)})
+                continue
+
         if not doc.extracted_text:
             results.append({"document_id": str(doc.id), "filename": doc.original_filename, "chunks": 0, "status": "skipped"})
             continue

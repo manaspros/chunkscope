@@ -20,22 +20,24 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create extensions
-    op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-    op.execute('CREATE EXTENSION IF NOT EXISTS "vector"')
-    
-    # Create ENUM types
-    document_type = postgresql.ENUM(
-        'pdf', 'txt', 'md', 'docx', 'html', 'code',
-        name='document_type'
-    )
-    document_type.create(op.get_bind())
-    
-    pipeline_status = postgresql.ENUM(
-        'draft', 'running', 'completed', 'failed',
-        name='pipeline_status'
-    )
-    pipeline_status.create(op.get_bind())
+    dialect = op.get_bind().dialect.name
+
+    # PostgreSQL-only extensions and types
+    if dialect == "postgresql":
+        op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+        op.execute('CREATE EXTENSION IF NOT EXISTS "vector"')
+
+        document_type = postgresql.ENUM(
+            'pdf', 'txt', 'md', 'docx', 'html', 'code',
+            name='document_type'
+        )
+        document_type.create(op.get_bind())
+
+        pipeline_status = postgresql.ENUM(
+            'draft', 'running', 'completed', 'failed',
+            name='pipeline_status'
+        )
+        pipeline_status.create(op.get_bind())
     
     evaluation_status = postgresql.ENUM(
         'pending', 'running', 'completed', 'failed',

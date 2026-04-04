@@ -31,26 +31,26 @@ function getFileExtension(name: string): string {
 function getFileTypeBadge(name: string): { label: string; color: string } {
     const ext = getFileExtension(name)
     const map: Record<string, { label: string; color: string }> = {
-        pdf: { label: "PDF", color: "text-red-400 border-red-500/30 bg-red-500/10" },
-        txt: { label: "TXT", color: "text-neutral-400 border-neutral-500/30 bg-neutral-500/10" },
-        md: { label: "MD", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
-        docx: { label: "DOCX", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
-        doc: { label: "DOC", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
-        csv: { label: "CSV", color: "text-green-400 border-green-500/30 bg-green-500/10" },
-        json: { label: "JSON", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
-        xml: { label: "XML", color: "text-orange-400 border-orange-500/30 bg-orange-500/10" },
-        yaml: { label: "YAML", color: "text-purple-400 border-purple-500/30 bg-purple-500/10" },
-        yml: { label: "YAML", color: "text-purple-400 border-purple-500/30 bg-purple-500/10" },
-        html: { label: "HTML", color: "text-orange-400 border-orange-500/30 bg-orange-500/10" },
-        htm: { label: "HTML", color: "text-orange-400 border-orange-500/30 bg-orange-500/10" },
-        py: { label: "Python", color: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10" },
-        js: { label: "JS", color: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10" },
-        ts: { label: "TS", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
-        tsx: { label: "TSX", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
-        jsx: { label: "JSX", color: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10" },
-        zip: { label: "ZIP", color: "text-violet-400 border-violet-500/30 bg-violet-500/10" },
+        pdf: { label: "PDF", color: "text-red-600 border-red-200 bg-red-50" },
+        txt: { label: "TXT", color: "text-neutral-600 border-neutral-200 bg-neutral-50" },
+        md: { label: "MD", color: "text-blue-600 border-blue-200 bg-blue-50" },
+        docx: { label: "DOCX", color: "text-blue-600 border-blue-200 bg-blue-50" },
+        doc: { label: "DOC", color: "text-blue-600 border-blue-200 bg-blue-50" },
+        csv: { label: "CSV", color: "text-green-600 border-green-200 bg-green-50" },
+        json: { label: "JSON", color: "text-amber-600 border-amber-200 bg-amber-50" },
+        xml: { label: "XML", color: "text-orange-600 border-orange-200 bg-orange-50" },
+        yaml: { label: "YAML", color: "text-purple-600 border-purple-200 bg-purple-50" },
+        yml: { label: "YAML", color: "text-purple-600 border-purple-200 bg-purple-50" },
+        html: { label: "HTML", color: "text-orange-600 border-orange-200 bg-orange-50" },
+        htm: { label: "HTML", color: "text-orange-600 border-orange-200 bg-orange-50" },
+        py: { label: "Python", color: "text-yellow-600 border-yellow-200 bg-yellow-50" },
+        js: { label: "JS", color: "text-yellow-600 border-yellow-200 bg-yellow-50" },
+        ts: { label: "TS", color: "text-blue-600 border-blue-200 bg-blue-50" },
+        tsx: { label: "TSX", color: "text-blue-600 border-blue-200 bg-blue-50" },
+        jsx: { label: "JSX", color: "text-yellow-600 border-yellow-200 bg-yellow-50" },
+        zip: { label: "ZIP", color: "text-violet-600 border-violet-200 bg-violet-50" },
     }
-    return map[ext] || { label: ext.toUpperCase() || "FILE", color: "text-neutral-400 border-neutral-500/30 bg-neutral-500/10" }
+    return map[ext] || { label: ext.toUpperCase() || "FILE", color: "text-neutral-600 border-neutral-200 bg-neutral-50" }
 }
 
 function getFileIcon(name: string) {
@@ -279,29 +279,45 @@ export function FileUploadZone({
                     "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed transition-all cursor-pointer",
                     compact ? "py-5" : "py-8",
                     dragOver
-                        ? "border-blue-500/50 bg-blue-500/5 animate-pulse"
-                        : "border-white/[0.06] hover:border-white/10 hover:bg-white/[0.02]"
+                        ? "border-blue-400 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                 )}
             >
-                <Upload className={cn(compact ? "w-5 h-5" : "w-6 h-6", dragOver ? "text-blue-400" : "text-neutral-600")} />
+                <Upload className={cn(compact ? "w-5 h-5" : "w-6 h-6", dragOver ? "text-blue-600" : "text-gray-400")} />
 
                 {uploading ? (
-                    <p className="text-[11px] text-neutral-400">Uploading...</p>
+                    <p className="text-[11px] text-gray-500">Uploading...</p>
                 ) : uploadedFileName ? (
                     <div className="flex flex-col items-center gap-1">
-                        <p className="text-[11px] text-neutral-300">{uploadedFileName}</p>
+                        <p className="text-[11px] text-gray-700">{uploadedFileName}</p>
                         {uploadSuccess && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded border border-emerald-200 text-emerald-600 bg-emerald-50">
                                 Uploaded
                             </span>
                         )}
                     </div>
                 ) : (
                     <>
-                        <p className="text-[11px] text-neutral-500 text-center px-4">
+                        <p className="text-[11px] text-gray-500 text-center px-4">
                             {helpText || defaultHelp}
+                            {allowFolder && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        if (folderInputRef.current) {
+                                            folderInputRef.current.value = ""
+                                            folderInputRef.current.click()
+                                        }
+                                    }}
+                                    className="ml-1 text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                                >
+                                    or select a folder
+                                </button>
+                            )}
                         </p>
-                        <p className="text-[9px] text-neutral-600 text-center px-4">
+                        <p className="text-[9px] text-gray-400 text-center px-4">
                             {supportedText || defaultSupported}
                         </p>
                     </>
@@ -319,45 +335,27 @@ export function FileUploadZone({
                 />
             </div>
 
-            {/* Folder upload button - separate from main drop zone */}
+            {/* Hidden folder input */}
             {allowFolder && (
-                <div className="relative">
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            // Programmatically click the hidden folder input
-                            if (folderInputRef.current) {
-                                folderInputRef.current.value = ""
-                                folderInputRef.current.click()
-                            }
-                        }}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-dashed border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10 hover:border-blue-500/50 text-[11px] text-blue-400 hover:text-blue-300 transition-all"
-                    >
-                        <Folder className="w-4 h-4" />
-                        Select Folder to Upload
-                    </button>
-                    <input
-                        ref={folderInputRef}
-                        type="file"
-                        className="hidden"
-                        multiple
-                        onChange={(e) => {
-                            if (e.target.files && e.target.files.length > 0) {
-                                handleFiles(e.target.files)
-                            }
-                        }}
-                        {...{ webkitdirectory: "", directory: "", mozdirectory: "" } as any}
-                    />
-                </div>
+                <input
+                    ref={folderInputRef}
+                    type="file"
+                    className="hidden"
+                    multiple
+                    onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                            handleFiles(e.target.files)
+                        }
+                    }}
+                    {...{ webkitdirectory: "", directory: "", mozdirectory: "" } as any}
+                />
             )}
 
             {/* Upload type summary */}
             {uploadType === "zip" && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                    <FileArchive className="w-4 h-4 text-violet-400 shrink-0" />
-                    <span className="text-[11px] text-violet-300">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200">
+                    <FileArchive className="w-4 h-4 text-violet-600 shrink-0" />
+                    <span className="text-[11px] text-violet-600">
                         {loadingZip
                             ? "Reading ZIP archive..."
                             : zipFileCount === -1
@@ -369,40 +367,40 @@ export function FileUploadZone({
             )}
 
             {uploadType === "folder" && entries.length > 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <Folder className="w-4 h-4 text-blue-400 shrink-0" />
-                    <span className="text-[11px] text-blue-300">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
+                    <Folder className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span className="text-[11px] text-blue-600">
                         Folder - {entries.length} file{entries.length !== 1 ? "s" : ""} selected
                     </span>
                 </div>
             )}
 
             {uploadType === "single" && entries.length === 1 && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200">
                     {(() => {
                         const Icon = getFileIcon(entries[0].name)
-                        return <Icon className="w-4 h-4 text-neutral-400 shrink-0" />
+                        return <Icon className="w-4 h-4 text-gray-500 shrink-0" />
                     })()}
-                    <span className="text-[11px] text-neutral-300 truncate flex-1">{entries[0].name}</span>
+                    <span className="text-[11px] text-gray-700 truncate flex-1">{entries[0].name}</span>
                     <span className={cn("text-[9px] px-1.5 py-0.5 rounded border", getFileTypeBadge(entries[0].name).color)}>
                         {getFileTypeBadge(entries[0].name).label}
                     </span>
-                    <span className="text-[9px] text-neutral-500">{formatFileSize(entries[0].file.size)}</span>
+                    <span className="text-[9px] text-gray-500">{formatFileSize(entries[0].file.size)}</span>
                 </div>
             )}
 
             {/* File list with checkboxes for ZIP / folder */}
             {showFileList && (uploadType === "zip" || uploadType === "folder") && entries.length > 0 && (
-                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
                     {/* Select all header */}
-                    <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/[0.06] bg-white/[0.02]">
-                        <button onClick={() => toggleAll(selectedCount < entries.length)} className="text-neutral-400 hover:text-white transition-colors">
+                    <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-200 bg-gray-50">
+                        <button onClick={() => toggleAll(selectedCount < entries.length)} className="text-gray-500 hover:text-gray-900 transition-colors">
                             {selectedCount === entries.length
-                                ? <CheckSquare className="w-3.5 h-3.5 text-blue-400" />
+                                ? <CheckSquare className="w-3.5 h-3.5 text-blue-600" />
                                 : <Square className="w-3.5 h-3.5" />
                             }
                         </button>
-                        <span className="text-[9px] text-neutral-500">
+                        <span className="text-[9px] text-gray-500">
                             {selectedCount}/{entries.length} selected
                         </span>
                     </div>
@@ -416,16 +414,16 @@ export function FileUploadZone({
                                     key={i}
                                     onClick={() => toggleEntry(i)}
                                     className={cn(
-                                        "w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-white/[0.03] transition-colors",
-                                        !entry.selected && "opacity-40"
+                                        "w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-gray-100 transition-colors",
+                                        !entry.selected && "opacity-50"
                                     )}
                                 >
                                     {entry.selected
-                                        ? <CheckSquare className="w-3 h-3 text-blue-400 shrink-0" />
-                                        : <Square className="w-3 h-3 text-neutral-600 shrink-0" />
+                                        ? <CheckSquare className="w-3 h-3 text-blue-600 shrink-0" />
+                                        : <Square className="w-3 h-3 text-gray-400 shrink-0" />
                                     }
-                                    <Icon className="w-3 h-3 text-neutral-500 shrink-0" />
-                                    <span className="text-[10px] text-neutral-300 truncate flex-1">{entry.name}</span>
+                                    <Icon className="w-3 h-3 text-gray-500 shrink-0" />
+                                    <span className="text-[10px] text-gray-700 truncate flex-1">{entry.name}</span>
                                     <span className={cn("text-[8px] px-1 py-0.5 rounded border", badge.color)}>
                                         {badge.label}
                                     </span>

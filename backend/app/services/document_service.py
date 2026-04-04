@@ -194,7 +194,10 @@ class DocumentService:
         )
         
         return stored_filename, str(file_path), total_bytes
-    
+
+    def delete_file(self, file_path: str) -> bool:
+        """Delete a file from disk. Returns True if deleted, False if not found."""
+        path = Path(file_path)
         if path.exists():
             path.unlink()
             logger.info("file_deleted", path=file_path)
@@ -297,6 +300,12 @@ class DocumentService:
         """
         Process a document to extract text and metadata.
 
+        NOTE: No longer called from upload endpoints. Uploads now set
+        is_processed=True immediately and text is extracted on-demand
+        at chunk time (see chunk_project in projects.py). This method
+        is kept for the visualizer page and any other callers that may
+        need standalone background extraction.
+
         This method is designed to run in the background.
         It manages its own database session.
         """
@@ -362,34 +371,10 @@ class DocumentService:
                     document.doc_metadata = current_metadata
                     document.is_processed = True
 
-                # ---------------------------------------------------------
-                # Generate Default Chunks (Recursive, 512, 50)
-                # ---------------------------------------------------------
-                if document.extracted_text:
-                    logger.info("generating_default_chunks", document_id=str(document_id))
-                    chunks_data = apply_chunking(
-                        text=document.extracted_text,
-                        method="recursive",
-                        chunk_size=512,
-                        overlap=50
-                    )
-
-                    db_chunks = []
-                    for i, c_data in enumerate(chunks_data):
-                        new_chunk = Chunk(
-                            document_id=document_id,
-                            text=c_data["text"],
-                            chunk_index=i,
-                            chunking_method=ChunkingMethod.RECURSIVE,
-                            chunk_size=512,
-                            chunk_overlap=50,
-                            chunk_metadata={"start": c_data["start"], "end": c_data["end"]}
-                        )
-                        db_chunks.append(new_chunk)
-
-                    if db_chunks:
-                        db.add_all(db_chunks)
-                        logger.info("default_chunks_generated", document_id=str(document_id), count=len(db_chunks))
+                # NOTE: No default chunking on upload. Chunking happens
+                # explicitly when the user selects a strategy (via /chunk endpoint
+                # or "Apply All" from AI analysis). This avoids wasting time on
+                # chunking that will be immediately replaced.
 
                 # Save changes
                 db.add(document)

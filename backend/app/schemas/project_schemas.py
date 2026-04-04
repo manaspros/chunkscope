@@ -41,6 +41,8 @@ class ProjectResponse(BaseSchema, IDMixin, TimestampMixin):
     dominant_doc_type: Optional[str]
     corpus_config: dict
     status: str
+    analysis_result: Optional[dict] = None
+    content_profile: Optional[dict] = None
 
 
 class ProjectFileInfo(BaseModel):

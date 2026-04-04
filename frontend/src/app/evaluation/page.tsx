@@ -10,7 +10,7 @@ import { ComparisonView } from "@/components/evaluation/ComparisonView"
 
 export default function EvaluationPage() {
     return (
-        <div className="min-h-screen bg-background font-sans">
+        <div className="min-h-screen bg-gray-50 font-sans">
             <Navbar />
 
             <main className="container-tight max-w-5xl">
@@ -18,32 +18,32 @@ export default function EvaluationPage() {
                 <div className="flex items-center gap-4 mb-8">
                     <Link
                         href="/"
-                        className="p-2 rounded-lg hover:bg-white/5 transition-colors text-zinc-500 hover:text-white"
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-900"
                     >
                         <ArrowLeft className="w-4 h-4" />
                     </Link>
                     <div>
                         <div className="flex items-center gap-2">
-                            <FlaskConical className="w-5 h-5 text-amber-500" />
-                            <h1 className="text-xl font-black text-white tracking-tight">
+                            <FlaskConical className="w-5 h-5 text-amber-600" />
+                            <h1 className="text-xl font-black text-gray-900 tracking-tight">
                                 Evaluation Dashboard
                             </h1>
                         </div>
-                        <p className="text-sm text-zinc-500 mt-0.5">
+                        <p className="text-sm text-gray-500 mt-0.5">
                             Evaluate RAG pipeline quality, chunk metrics, and compare configurations
                         </p>
                     </div>
                 </div>
 
                 <Tabs defaultValue="evaluate" className="space-y-6">
-                    <TabsList className="bg-zinc-900/80 border border-white/5">
-                        <TabsTrigger value="evaluate" className="text-xs font-bold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400">
+                    <TabsList className="bg-white border border-gray-200">
+                        <TabsTrigger value="evaluate" className="text-xs font-bold data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700">
                             RAG Evaluation
                         </TabsTrigger>
-                        <TabsTrigger value="chunk-quality" className="text-xs font-bold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400">
+                        <TabsTrigger value="chunk-quality" className="text-xs font-bold data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700">
                             Chunk Quality
                         </TabsTrigger>
-                        <TabsTrigger value="compare" className="text-xs font-bold data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400">
+                        <TabsTrigger value="compare" className="text-xs font-bold data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700">
                             Compare
                         </TabsTrigger>
                     </TabsList>

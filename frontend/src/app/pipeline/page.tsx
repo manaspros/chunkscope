@@ -8,7 +8,7 @@ const PipelineBuilder = dynamic(
     {
         ssr: false,
         loading: () => (
-            <div className="flex-1 flex items-center justify-center bg-neutral-950 text-neutral-500 text-sm">
+            <div className="flex-1 flex items-center justify-center bg-gray-50 text-gray-400 text-sm">
                 Loading pipeline builder...
             </div>
         ),
@@ -45,7 +45,7 @@ function PipelineNameEditor() {
                     if (e.key === 'Enter') handleSubmit()
                     if (e.key === 'Escape') { setDraft(pipelineName); setEditing(false) }
                 }}
-                className="bg-transparent border-b border-white/20 text-sm font-semibold text-white outline-none px-1 py-0.5 w-56"
+                className="bg-transparent border-b border-gray-300 text-sm font-semibold text-gray-900 outline-none px-1 py-0.5 w-56"
             />
         )
     }
@@ -53,7 +53,7 @@ function PipelineNameEditor() {
     return (
         <button
             onClick={() => { setDraft(pipelineName); setEditing(true) }}
-            className="text-sm font-semibold text-white hover:text-neutral-300 transition-colors truncate max-w-[200px]"
+            className="text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors truncate max-w-[200px]"
             title="Click to rename"
         >
             {pipelineName}
@@ -104,14 +104,14 @@ function SaveButton() {
         <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2.5 text-[10px] text-neutral-400 hover:text-white hover:bg-white/5"
+            className="h-7 px-2.5 text-[10px] text-gray-500 hover:text-gray-900 hover:bg-gray-100"
             onClick={handleSave}
             disabled={saving}
         >
             {saving ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : saved ? (
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
             ) : (
                 <Save className="w-3.5 h-3.5" />
             )}
@@ -163,7 +163,7 @@ function LoadButton() {
         <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2.5 text-[10px] text-neutral-400 hover:text-white hover:bg-white/5"
+            className="h-7 px-2.5 text-[10px] text-gray-500 hover:text-gray-900 hover:bg-gray-100"
             onClick={handleLoad}
             disabled={loading}
         >
@@ -178,23 +178,17 @@ export default function PipelinePage() {
     const [wizardOpen, setWizardOpen] = useState(false)
 
     return (
-        <div className="relative h-screen w-screen flex flex-col bg-black overflow-hidden font-sans">
-            {/* Fixed Background */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-black" />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(168,85,247,0.04)_0%,transparent_50%)]" />
-            </div>
-
+        <div className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden font-sans">
             {/* Top Bar */}
-            <header className="relative z-20 h-11 border-b border-white/[0.06] flex items-center px-4 bg-neutral-950/80 backdrop-blur-xl shrink-0">
+            <header className="relative z-20 h-11 border-b border-gray-200 flex items-center px-4 bg-white shrink-0">
                 <Link
                     href="/dashboard"
-                    className="p-1.5 -ml-1 rounded-lg hover:bg-white/5 transition-colors text-neutral-500 hover:text-white mr-3"
+                    className="p-1.5 -ml-1 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-900 mr-3"
                 >
                     <ArrowLeft className="w-4 h-4" />
                 </Link>
 
-                <div className="w-px h-5 bg-white/[0.06] mr-3" />
+                <div className="w-px h-5 bg-gray-200 mr-3" />
 
                 <PipelineNameEditor />
 
@@ -204,21 +198,21 @@ export default function PipelinePage() {
 
                 <div className="ml-auto flex items-center gap-1">
                     {isExecuting && (
-                        <span className="text-[9px] text-yellow-400 font-mono flex items-center gap-1.5 mr-3">
-                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                        <span className="text-[9px] text-yellow-600 font-mono flex items-center gap-1.5 mr-3">
+                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
                             Executing...
                         </span>
                     )}
                     {!isExecuting && (
-                        <span className="text-[9px] text-neutral-600 font-mono flex items-center gap-1.5 mr-3">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+                        <span className="text-[9px] text-gray-400 font-mono flex items-center gap-1.5 mr-3">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             Ready
                         </span>
                     )}
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2.5 text-[10px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                        className="h-7 px-2.5 text-[10px] text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                         onClick={() => setWizardOpen(true)}
                     >
                         <Wand2 className="w-3.5 h-3.5" />

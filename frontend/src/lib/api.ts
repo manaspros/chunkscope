@@ -181,8 +181,8 @@ export const guideApi = {
 };
 
 export const projectsApi = {
-    list: async () => {
-        const response = await apiClient.get('/api/v1/projects');
+    list: async (params?: { status?: string }) => {
+        const response = await apiClient.get('/api/v1/projects', { params });
         return response.data;
     },
     create: async (data: { name: string; description?: string }) => {
@@ -244,6 +244,22 @@ export const projectsApi = {
     removeFile: async (id: string, fileId: string) => {
         const response = await apiClient.delete(`/api/v1/projects/${id}/files/${fileId}`);
         return response.data;
+    },
+    smartAnalyze: async (id: string, priority = 'accuracy', budget = 'moderate') => {
+        const { data } = await apiClient.post(
+            `/api/v1/projects/${id}/smart-analyze`,
+            null,
+            { params: { priority, budget } }
+        );
+        return data;
+    },
+    aiAnalyze: async (id: string, model = 'gpt-4o-mini') => {
+        const { data } = await apiClient.post(
+            `/api/v1/projects/${id}/ai-analyze`,
+            null,
+            { params: { model } }
+        );
+        return data;
     },
 };
 

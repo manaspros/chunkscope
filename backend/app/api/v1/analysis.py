@@ -35,6 +35,7 @@ class AnalysisResponse(BaseModel):
     recommended_config: Dict
     confidence_score: float
     reasoning: str
+    pipeline_recommendation: Optional[Dict] = None
 
 
 class CorpusFileResult(BaseModel):
@@ -102,8 +103,23 @@ async def analyze_document(
         # Debug logging
         logger.info("analysis_complete", filename=file.filename, document_id=document_id)
 
+        # Compute pipeline recommendation if content signals are available
+        pipeline_rec = None
+        try:
+            from app.services.pipeline_recommender import pipeline_recommender
+            signals = result.get("content_signals", {})
+            if signals:
+                rec = pipeline_recommender.recommend(
+                    signals=signals,
+                    doc_type=result["document_type"],
+                )
+                pipeline_rec = rec.to_dict()
+        except Exception as e:
+            logger.warning("pipeline_recommendation_failed", error=str(e))
+
         return AnalysisResponse(
             document_id=document_id,
+            pipeline_recommendation=pipeline_rec,
             **result
         )
 

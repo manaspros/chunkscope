@@ -183,6 +183,10 @@ class Project(Base, TimestampMixin):
     dominant_doc_type: Mapped[Optional[str]] = mapped_column(String(50))
     corpus_config: Mapped[dict] = mapped_column(JSON, default=dict)  # recommended RAG config
 
+    # Analysis results (persisted as JSON)
+    analysis_result: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=None)
+    content_profile: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=None)
+
     # Status
     status: Mapped[str] = mapped_column(String(20), default="active")  # active, archived
 

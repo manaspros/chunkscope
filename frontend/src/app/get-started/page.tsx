@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button"
 
 export default function GetStartedPage() {
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
+        <div className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center p-4">
             <div className="max-w-4xl w-full text-center space-y-12">
                 <div className="space-y-6">
-                    <h1 className="text-5xl md:text-7xl font-bold tracking-tighter bg-gradient-to-r from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
+                    <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-gray-900">
                         Ready to Optimize Your RAG?
                     </h1>
-                    <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
+                    <p className="text-xl text-gray-500 max-w-2xl mx-auto">
                         Use ChunkScope to visualize embeddings, debug retrieval, and build better pipelines.
                     </p>
                 </div>
@@ -25,12 +25,12 @@ export default function GetStartedPage() {
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
                     <Link href="/dashboard">
-                        <Button size="lg" className="h-14 px-8 rounded-full text-lg bg-white text-black hover:bg-zinc-200 font-bold">
+                        <Button size="lg" className="h-14 px-8 rounded-full text-lg bg-gray-900 text-white hover:bg-gray-800 font-bold">
                             Go to Dashboard <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
                     </Link>
                     <Link href="/visualizer">
-                        <Button variant="ghost" size="lg" className="h-14 px-8 rounded-full text-lg text-zinc-400 hover:text-white">
+                        <Button variant="ghost" size="lg" className="h-14 px-8 rounded-full text-lg text-gray-500 hover:text-gray-900">
                             Launch Visualizer
                         </Button>
                     </Link>
@@ -43,10 +43,10 @@ export default function GetStartedPage() {
 function FeatureItem({ title, description }: { title: string, description: string }) {
     return (
         <div className="space-y-2">
-            <h3 className="font-semibold text-white flex items-center gap-2">
-                <CheckCircle2 className="text-amber-500 h-5 w-5" /> {title}
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <CheckCircle2 className="text-amber-600 h-5 w-5" /> {title}
             </h3>
-            <p className="text-zinc-500 text-sm leading-relaxed">{description}</p>
+            <p className="text-gray-500 text-sm leading-relaxed">{description}</p>
         </div>
     )
 }

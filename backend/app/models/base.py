@@ -5,8 +5,7 @@ from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import MetaData
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import MetaData, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -29,8 +28,8 @@ class Base(DeclarativeBase):
     
     # Common columns for all models
     id: Mapped[str] = mapped_column(
-        UUID(as_uuid=True), 
-        primary_key=True, 
+        Uuid(as_uuid=True),
+        primary_key=True,
         default=uuid4
     )
     

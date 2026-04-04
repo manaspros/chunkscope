@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.dependencies import DbSession
 from app.schemas.query import QueryRequest, QueryResponse, ChunkWithScore
-from app.services.embeddings import OpenAIEmbedder
+from app.services.llm_service import llm_service
 from app.services.retrievers.hybrid_retriever import HybridRetriever
 from app.services.retrievers.mmr_retriever import MMRRetriever
 from app.services.retrievers.parent_document_retriever import ParentDocumentRetriever
@@ -23,9 +23,8 @@ async def query_pipeline(
     Perform a retrieval query using the specified method.
     """
     try:
-        # 1. Get query embedding
-        embedder = OpenAIEmbedder()
-        embeddings = await embedder.embed([request.query])
+        # 1. Get query embedding via LiteLLM (uses LITELLM_API_KEY)
+        embeddings = await llm_service.embed([request.query])
         query_embedding = embeddings[0]
 
         # 2. Select retriever

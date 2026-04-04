@@ -24,7 +24,7 @@ export default function SuggestionsPage() {
     const hasResults = profile || recommendations || explanation
 
     return (
-        <div className="min-h-screen bg-background font-sans">
+        <div className="min-h-screen bg-gray-50 font-sans">
             <Navbar />
 
             <main className="container-tight max-w-5xl">
@@ -32,18 +32,18 @@ export default function SuggestionsPage() {
                 <div className="flex items-center gap-4 mb-8">
                     <Link
                         href="/"
-                        className="p-2 rounded-lg hover:bg-white/5 transition-colors text-zinc-500 hover:text-white"
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-900"
                     >
                         <ArrowLeft className="w-4 h-4" />
                     </Link>
                     <div>
                         <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-amber-500" />
-                            <h1 className="text-xl font-black text-white tracking-tight">
+                            <Sparkles className="w-5 h-5 text-amber-600" />
+                            <h1 className="text-xl font-black text-gray-900 tracking-tight">
                                 AI Suggestions
                             </h1>
                         </div>
-                        <p className="text-sm text-zinc-500 mt-0.5">
+                        <p className="text-sm text-gray-500 mt-0.5">
                             Upload a document and get intelligent chunking recommendations
                         </p>
                     </div>
@@ -51,7 +51,7 @@ export default function SuggestionsPage() {
 
                 {/* Error */}
                 {error && (
-                    <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-sm text-red-400">
+                    <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-600">
                         {error}
                     </div>
                 )}
@@ -73,11 +73,11 @@ export default function SuggestionsPage() {
                     <div className="lg:col-span-2 space-y-6">
                         {!hasResults && !isProfilingLoading && (
                             <div className="flex flex-col items-center justify-center h-64 text-center">
-                                <Sparkles className="w-10 h-10 text-zinc-700 mb-4" />
-                                <p className="text-zinc-500 text-sm">
+                                <Sparkles className="w-10 h-10 text-gray-300 mb-4" />
+                                <p className="text-gray-500 text-sm">
                                     Paste or upload a document to get started
                                 </p>
-                                <p className="text-zinc-600 text-xs mt-1">
+                                <p className="text-gray-400 text-xs mt-1">
                                     The AI will analyze your content and suggest optimal chunking parameters
                                 </p>
                             </div>

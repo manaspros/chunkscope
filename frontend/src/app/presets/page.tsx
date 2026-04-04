@@ -16,9 +16,9 @@ const presets = [
         title: "Legal Contracts",
         description: "Optimized for dense legal text with overlap for clause continuity.",
         icon: Scale,
-        color: "text-blue-400",
-        bg: "bg-blue-500/10",
-        border: "group-hover:border-blue-500/50",
+        color: "text-blue-600",
+        bg: "bg-blue-50",
+        border: "group-hover:border-blue-300",
         config: { method: "recursive", size: 1024, overlap: 200 }
     },
     {
@@ -26,9 +26,9 @@ const presets = [
         title: "Medical Research",
         description: "Preserves context for complex medical terminology and citations.",
         icon: Stethoscope,
-        color: "text-green-400",
-        bg: "bg-green-500/10",
-        border: "group-hover:border-green-500/50",
+        color: "text-green-600",
+        bg: "bg-green-50",
+        border: "group-hover:border-green-300",
         config: { method: "semantic", size: 512, overlap: 50 }
     },
     {
@@ -36,9 +36,9 @@ const presets = [
         title: "Technical Documentation",
         description: "Handles code blocks and technical specifications with precision.",
         icon: Code,
-        color: "text-orange-400",
-        bg: "bg-orange-500/10",
-        border: "group-hover:border-orange-500/50",
+        color: "text-orange-600",
+        bg: "bg-orange-50",
+        border: "group-hover:border-orange-300",
         config: { method: "markdown", size: 512, overlap: 100 }
     },
     {
@@ -46,9 +46,9 @@ const presets = [
         title: "Academic Papers",
         description: "Ideal for two-column layouts and dense academic writing.",
         icon: BookOpen,
-        color: "text-purple-400",
-        bg: "bg-purple-500/10",
-        border: "group-hover:border-purple-500/50",
+        color: "text-purple-600",
+        bg: "bg-purple-50",
+        border: "group-hover:border-purple-300",
         config: { method: "recursive", size: 800, overlap: 150 }
     },
     {
@@ -56,9 +56,9 @@ const presets = [
         title: "Financial Reports",
         description: "Maintains tabular data structure and numerical context.",
         icon: FileText,
-        color: "text-gold",
-        bg: "bg-gold/10",
-        border: "group-hover:border-gold/50",
+        color: "text-amber-600",
+        bg: "bg-amber-50",
+        border: "group-hover:border-amber-300",
         config: { method: "semantic", size: 400, overlap: 50 }
     }
 ]
@@ -109,16 +109,16 @@ export default function PresetsPage() {
     }
 
     return (
-        <div className="relative min-h-screen bg-transparent font-sans text-white overflow-x-hidden">
+        <div className="relative min-h-screen bg-gray-50 font-sans text-gray-900 overflow-x-hidden">
                 <div className="relative z-10 p-8 max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-12">
-                        <Link href="/dashboard" className="group flex items-center text-zinc-400 hover:text-white transition-colors">
+                        <Link href="/dashboard" className="group flex items-center text-gray-400 hover:text-gray-900 transition-colors">
                             <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
                             Back to Dashboard
                         </Link>
-                        <h1 className="text-4xl font-bold tracking-tight text-white mb-2">
-                            Pipeline <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">Presets</span>
+                        <h1 className="text-4xl font-bold tracking-tight text-gray-900 mb-2">
+                            Pipeline <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">Presets</span>
                         </h1>
                     </div>
 
@@ -127,30 +127,28 @@ export default function PresetsPage() {
                             <div
                                 key={preset.id}
                                 onClick={() => handlePresetClick(preset)}
-                                className={`group relative p-6 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 ${preset.border} hover:shadow-[0_0_30px_rgba(0,0,0,0.5)] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer overflow-hidden`}
+                                className={`group relative p-6 rounded-xl bg-white border border-gray-200 ${preset.border} hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all cursor-pointer overflow-hidden`}
                             >
-                                <div className={`absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-
                                 <div className="relative z-10">
-                                    <div className={`w-12 h-12 rounded-xl ${preset.bg} flex items-center justify-center mb-6 ring-1 ring-white/10`}>
+                                    <div className={`w-12 h-12 rounded-xl ${preset.bg} flex items-center justify-center mb-6 ring-1 ring-gray-200`}>
                                         <preset.icon className={`w-6 h-6 ${preset.color}`} />
                                     </div>
 
-                                    <h3 className="text-xl font-bold text-white mb-2">{preset.title}</h3>
-                                    <p className="text-zinc-400 text-sm mb-6 min-h-[40px]">{preset.description}</p>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">{preset.title}</h3>
+                                    <p className="text-gray-500 text-sm mb-6 min-h-[40px]">{preset.description}</p>
 
-                                    <div className="space-y-2 mb-6 p-3 rounded-lg bg-black/40 border border-white/5 font-mono text-xs text-zinc-500">
+                                    <div className="space-y-2 mb-6 p-3 rounded-lg bg-gray-50 border border-gray-200 font-mono text-xs text-gray-400">
                                         <div className="flex justify-between">
                                             <span>Method:</span>
-                                            <span className="text-zinc-300 font-bold uppercase tracking-widest">{preset.config.method}</span>
+                                            <span className="text-gray-900 font-bold uppercase tracking-widest">{preset.config.method}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Size:</span>
-                                            <span className="text-zinc-300 font-bold">{preset.config.size}</span>
+                                            <span className="text-gray-900 font-bold">{preset.config.size}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Overlap:</span>
-                                            <span className="text-zinc-300 font-bold">{preset.config.overlap}</span>
+                                            <span className="text-gray-900 font-bold">{preset.config.overlap}</span>
                                         </div>
                                     </div>
 
