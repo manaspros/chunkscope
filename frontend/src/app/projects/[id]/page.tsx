@@ -615,10 +615,12 @@ export default function ProjectDetailPage() {
                                     Corpus Config
                                 </h2>
                                 <div className="space-y-2 text-xs">
-                                    {Object.entries(project.corpus_config).map(([key, value]) => (
+                                    {Object.entries(project.corpus_config)
+                                        .filter(([, value]) => typeof value !== 'object' || value === null)
+                                        .map(([key, value]) => (
                                         <div key={key} className="flex items-center justify-between py-1 border-b border-gray-200 last:border-0">
                                             <span className="text-gray-400 capitalize">{key.replace(/_/g, ' ')}</span>
-                                            <span className="text-gray-900 font-medium">{String(value)}</span>
+                                            <span className="text-gray-900 font-medium">{String(value ?? '-')}</span>
                                         </div>
                                     ))}
                                 </div>
