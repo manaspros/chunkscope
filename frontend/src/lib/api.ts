@@ -263,6 +263,13 @@ export const projectsApi = {
     },
 };
 
+export const queryApi = {
+    query: async (data: { query: string; document_id?: string; retrieval_method?: string; top_k?: number }) => {
+        const response = await apiClient.post('/api/v1/query/', data);
+        return response.data;
+    },
+};
+
 export const analyzerApi = {
     analyzeDocument: async (file: File) => {
         const formData = new FormData();

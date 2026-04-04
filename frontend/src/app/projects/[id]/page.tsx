@@ -10,17 +10,10 @@ import {
     Layers,
     Trash2,
     Loader2,
-    Sparkles,
     ArrowRight,
     Settings2,
-    ChevronDown,
-    ChevronUp,
-    BarChart3,
     CheckCircle2,
-    XCircle,
-    Clock,
     BrainCircuit,
-    Wand2,
     Search,
     MessageSquare,
     Eye,
@@ -86,17 +79,8 @@ export default function ProjectDetailPage() {
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
-    const [chunking, setChunking] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<any>(null);
     const [showAnalysis, setShowAnalysis] = useState(false);
-    const [showChunkConfig, setShowChunkConfig] = useState(false);
-
-    // Chunk config
-    const [chunkMethod, setChunkMethod] = useState('recursive');
-    const [chunkSize, setChunkSize] = useState(512);
-    const [chunkOverlap, setChunkOverlap] = useState(50);
-    const [quickAnalyzing, setQuickAnalyzing] = useState(false);
-    const [quickAnalyzingStep, setQuickAnalyzingStep] = useState('');
 
     // Pipeline recommendation (from smart-analyze or ai-analyze)
     const [pipelineRec, setPipelineRec] = useState<any>(null);
@@ -114,10 +98,6 @@ export default function ProjectDetailPage() {
 
     // Archive toggle
     const [togglingArchive, setTogglingArchive] = useState(false);
-
-    // Chunking progress
-    const [chunkProgress, setChunkProgress] = useState(0);
-    const [chunkProgressText, setChunkProgressText] = useState('');
 
     const fetchProject = useCallback(async () => {
         try {
@@ -149,23 +129,6 @@ export default function ProjectDetailPage() {
         fetchProject();
     }, [fetchProject]);
 
-
-    // Load template config from localStorage if available
-    useEffect(() => {
-        try {
-            const templateKey = `project_template_${projectId}`;
-            const stored = localStorage.getItem(templateKey);
-            if (stored) {
-                const config = JSON.parse(stored);
-                if (config.chunking_method) setChunkMethod(config.chunking_method);
-                if (config.chunk_size) setChunkSize(config.chunk_size);
-                if (config.overlap !== undefined) setChunkOverlap(config.overlap);
-                localStorage.removeItem(templateKey);
-            }
-        } catch {
-            // localStorage not available or invalid JSON, skip
-        }
-    }, [projectId]);
 
     const handleFiles = useCallback(async (files: File[]) => {
         if (!files.length) return;
@@ -209,14 +172,6 @@ export default function ProjectDetailPage() {
             setAnalysisResult(result);
             setShowAnalysis(true);
 
-            // Apply recommended config as defaults
-            if (result.corpus_recommendation) {
-                const rec = result.corpus_recommendation;
-                if (rec.chunking_method) setChunkMethod(rec.chunking_method);
-                if (rec.chunk_size) setChunkSize(rec.chunk_size);
-                if (rec.overlap) setChunkOverlap(rec.overlap);
-            }
-
             // Store pipeline recommendation if present
             if (result.pipeline_recommendation) {
                 setPipelineRec(result.pipeline_recommendation);
@@ -231,40 +186,6 @@ export default function ProjectDetailPage() {
             toast({ title: 'Analysis failed', description: getErrorMessage(error), variant: 'destructive' });
         } finally {
             setAnalyzing(false);
-        }
-    };
-
-    const handleChunk = async () => {
-        setChunking(true);
-        setChunkProgress(10);
-        setChunkProgressText('Preparing files...');
-        const progressInterval = setInterval(() => {
-            setChunkProgress(prev => Math.min(prev + 5, 90));
-            setChunkProgressText(() => {
-                const fileNum = Math.floor(Math.random() * (project?.total_files || 1)) + 1;
-                return `Processing file ${fileNum} of ${project?.total_files}...`;
-            });
-        }, 2000);
-        try {
-            const result = await projectsApi.chunk(projectId, {
-                chunking_method: chunkMethod,
-                chunk_size: chunkSize,
-                overlap: chunkOverlap,
-            });
-            clearInterval(progressInterval);
-            setChunkProgress(100);
-            setChunkProgressText('Complete!');
-            toast({ title: `Created ${result.total_chunks} chunks across ${result.files?.length || 0} files` });
-            setShowChunkConfig(false);
-            fetchProject();
-        } catch (error) {
-            clearInterval(progressInterval);
-            setChunkProgress(0);
-            setChunkProgressText('');
-            toast({ title: 'Chunking failed', description: getErrorMessage(error), variant: 'destructive' });
-        } finally {
-            setChunking(false);
-            setTimeout(() => { setChunkProgress(0); setChunkProgressText(''); }, 2000);
         }
     };
 
@@ -294,72 +215,15 @@ export default function ProjectDetailPage() {
         }
     };
 
-    const handleApplyPipeline = async (customConfig?: any) => {
+    const handleBuildPipeline = () => {
         if (!pipelineRec) return;
-        // Check if files are still processing
-        const pendingFiles = project?.files?.filter((f: ProjectFile) => !f.is_processed) || [];
-        if (pendingFiles.length > 0) {
-            toast({
-                title: 'Files still processing',
-                description: `${pendingFiles.length} file(s) are still being extracted. Please wait a moment and try again.`,
-            });
-            return;
-        }
-
-        // Use customized config if provided, otherwise extract from primary technique
-        let method = chunkMethod;
-        let size = chunkSize;
-        let ovlp = chunkOverlap;
-
-        if (customConfig) {
-            method = customConfig.chunking_method || method;
-            size = customConfig.chunk_size || size;
-            ovlp = customConfig.overlap ?? ovlp;
-        } else {
-            const primaryChunking = pipelineRec.chunking?.find((t: any) => t.is_primary) || pipelineRec.chunking?.[0];
-            if (primaryChunking?.config) {
-                method = primaryChunking.config.chunking_method || primaryChunking.config.method || primaryChunking.name || method;
-                size = primaryChunking.config.chunk_size || size;
-                ovlp = primaryChunking.config.overlap ?? ovlp;
-            } else if (primaryChunking?.name) {
-                method = primaryChunking.name;
-            }
-        }
-
-        setChunkMethod(method);
-        setChunkSize(size);
-        setChunkOverlap(ovlp);
-
-        // Trigger chunking
-        setChunking(true);
-        setChunkProgress(10);
-        setChunkProgressText('Applying pipeline...');
-        const progressInterval = setInterval(() => {
-            setChunkProgress(prev => Math.min(prev + 5, 90));
-        }, 2000);
-        try {
-            const result = await projectsApi.chunk(projectId, {
-                chunking_method: method,
-                chunk_size: size,
-                overlap: ovlp,
-            });
-            clearInterval(progressInterval);
-            setChunkProgress(100);
-            setChunkProgressText('Complete!');
-            toast({
-                title: 'Pipeline Applied',
-                description: `Created ${result.total_chunks} chunks across ${result.files?.length || 0} files`,
-            });
-            fetchProject();
-        } catch (error) {
-            clearInterval(progressInterval);
-            setChunkProgress(0);
-            setChunkProgressText('');
-            toast({ title: 'Chunking failed', description: getErrorMessage(error), variant: 'destructive' });
-        } finally {
-            setChunking(false);
-            setTimeout(() => { setChunkProgress(0); setChunkProgressText(''); }, 2000);
-        }
+        // Store recommendation for pipeline page to pick up
+        localStorage.setItem('pipeline_recommendation', JSON.stringify({
+            projectId,
+            recommendation: pipelineRec,
+            contentProfile: contentProfile,
+        }));
+        router.push(`/pipeline?projectId=${projectId}`);
     };
 
     const handleAiDeepAnalysis = async () => {
@@ -383,69 +247,6 @@ export default function ProjectDetailPage() {
             toast({ title: 'AI Analysis Failed', description: getErrorMessage(error), variant: 'destructive' });
         } finally {
             setAiDeepAnalyzing(false);
-        }
-    };
-
-    const handleQuickAnalysis = async () => {
-        setQuickAnalyzing(true);
-        setChunkProgress(10);
-        setChunkProgressText('Preparing files...');
-        const progressInterval = setInterval(() => {
-            setChunkProgress(prev => Math.min(prev + 5, 90));
-            setChunkProgressText(() => {
-                const fileNum = Math.floor(Math.random() * (project?.total_files || 1)) + 1;
-                return `Processing file ${fileNum} of ${project?.total_files}...`;
-            });
-        }, 2000);
-        try {
-            // Step 1: Analyze corpus
-            setQuickAnalyzingStep('Analyzing corpus...');
-            const analysis = await projectsApi.analyze(projectId);
-            setAnalysisResult(analysis);
-            setShowAnalysis(true);
-
-            // Store pipeline recommendation if present
-            if (analysis.pipeline_recommendation) {
-                setPipelineRec(analysis.pipeline_recommendation);
-            }
-
-            const rec = analysis.corpus_recommendation || {};
-            const method = rec.chunking_method || 'recursive';
-            const size = rec.chunk_size || 512;
-            const overlap = rec.overlap || 50;
-
-            // Update local config to show what AI chose
-            setChunkMethod(method);
-            setChunkSize(size);
-            setChunkOverlap(overlap);
-
-            // Step 2: Chunk with AI-recommended settings
-            setQuickAnalyzingStep(`Chunking with ${method} (${size} tokens)...`);
-            const result = await projectsApi.chunk(projectId, {
-                chunking_method: method,
-                chunk_size: size,
-                overlap: overlap,
-            });
-
-            clearInterval(progressInterval);
-            setChunkProgress(100);
-            setChunkProgressText('Complete!');
-
-            toast({
-                title: 'Quick Analysis Complete',
-                description: `Analyzed corpus → recommended ${method} chunking → created ${result.total_chunks} chunks across ${result.files?.length || 0} files`,
-            });
-
-            fetchProject();
-        } catch (error) {
-            clearInterval(progressInterval);
-            setChunkProgress(0);
-            setChunkProgressText('');
-            toast({ title: 'Quick Analysis failed', description: getErrorMessage(error), variant: 'destructive' });
-        } finally {
-            setQuickAnalyzing(false);
-            setQuickAnalyzingStep('');
-            setTimeout(() => { setChunkProgress(0); setChunkProgressText(''); }, 2000);
         }
     };
 
@@ -700,7 +501,7 @@ export default function ProjectDetailPage() {
                         {pipelineRec && (
                             <PipelineFlow
                                 recommendation={pipelineRec}
-                                onApplyAll={handleApplyPipeline}
+                                onBuildPipeline={handleBuildPipeline}
                             />
                         )}
 
@@ -797,93 +598,11 @@ export default function ProjectDetailPage() {
                                 )}
                             </button>
 
-                            {/* Chunking Progress Bar */}
-                            {chunkProgress > 0 && (
-                                <div className="space-y-1.5 animate-in fade-in">
-                                    <div className="w-full h-2 rounded-full bg-gray-50 overflow-hidden">
-                                        <div
-                                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-amber-500 transition-all duration-700 ease-out"
-                                            style={{ width: `${chunkProgress}%` }}
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between text-[10px]">
-                                        <span className="text-gray-400">{chunkProgressText}</span>
-                                        <span className="text-gray-500 font-mono">{chunkProgress}%</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-2 py-1">
-                                <div className="flex-1 border-t border-gray-200" />
-                                <span className="text-[9px] text-gray-400 uppercase tracking-widest">or manually</span>
-                                <div className="flex-1 border-t border-gray-200" />
-                            </div>
-
-                            <button
-                                onClick={() => setShowChunkConfig(!showChunkConfig)}
-                                disabled={project.total_files === 0}
-                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 text-xs font-bold transition-all disabled:opacity-40"
-                            >
-                                <Settings2 className="w-3.5 h-3.5" />
-                                Manual Chunking
-                                {showChunkConfig ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            </button>
-
-                            {/* Chunk config panel */}
-                            {showChunkConfig && (
-                                <div className="p-4 rounded-xl bg-white border border-gray-200 space-y-3 animate-in fade-in slide-in-from-top-2">
-                                    <div>
-                                        <label className="block text-[9px] uppercase tracking-widest text-gray-400 mb-1">Method</label>
-                                        <select
-                                            value={chunkMethod}
-                                            onChange={(e) => setChunkMethod(e.target.value)}
-                                            className="w-full px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-xs text-gray-700"
-                                        >
-                                            <option value="recursive">Recursive</option>
-                                            <option value="fixed">Fixed Size</option>
-                                            <option value="sentence">Sentence</option>
-                                            <option value="paragraph">Paragraph</option>
-                                            <option value="semantic">Semantic</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-[9px] uppercase tracking-widest text-gray-400 mb-1">Chunk Size</label>
-                                        <input
-                                            type="number"
-                                            value={chunkSize}
-                                            onChange={(e) => setChunkSize(Number(e.target.value))}
-                                            min={50}
-                                            max={10000}
-                                            className="w-full px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-xs text-gray-700"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[9px] uppercase tracking-widest text-gray-400 mb-1">Overlap</label>
-                                        <input
-                                            type="number"
-                                            value={chunkOverlap}
-                                            onChange={(e) => setChunkOverlap(Number(e.target.value))}
-                                            min={0}
-                                            max={500}
-                                            className="w-full px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-xs text-gray-700"
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={handleChunk}
-                                        disabled={chunking}
-                                        className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                                    >
-                                        {chunking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5" />}
-                                        {chunking ? 'Chunking...' : 'Run Chunking'}
-                                    </button>
-                                </div>
-                            )}
-
                             <Link
                                 href="/pipeline"
                                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 hover:text-gray-900 hover:bg-gray-50 text-xs font-bold transition-all"
                             >
-                                Build Pipeline
+                                Open Pipeline Builder
                                 <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
                         </div>
@@ -903,18 +622,6 @@ export default function ProjectDetailPage() {
                                         </div>
                                     ))}
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        const rec = project.corpus_config;
-                                        if (rec.chunking_method) setChunkMethod(rec.chunking_method);
-                                        if (rec.chunk_size) setChunkSize(rec.chunk_size);
-                                        if (rec.overlap) setChunkOverlap(rec.overlap);
-                                        setShowChunkConfig(true);
-                                    }}
-                                    className="w-full mt-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-600 text-[10px] font-bold uppercase tracking-widest hover:bg-amber-100 transition-all"
-                                >
-                                    Apply to Chunking
-                                </button>
                             </div>
                         )}
                     </div>
