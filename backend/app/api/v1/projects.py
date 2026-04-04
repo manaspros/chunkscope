@@ -10,7 +10,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from app.services.document_analyzer import document_analyzer as _document_analyzer
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from app.core.errors import BadRequestError, NotFoundError
 from app.core.logging import get_logger
@@ -787,6 +787,16 @@ async def chunk_project(
                 token_count=len(c["text"].split()),
             )
             db.add(chunk)
+            await db.flush()
+
+            # Generate tsvector for full-text search (PostgreSQL only)
+            try:
+                await db.execute(
+                    text("UPDATE chunks SET tsv = to_tsvector('english', :txt) WHERE id = :cid"),
+                    {"txt": c["text"], "cid": str(chunk.id)},
+                )
+            except Exception:
+                pass  # Skip if not PostgreSQL
 
         total_new_chunks += len(chunks_data)
         results.append({
@@ -798,11 +808,44 @@ async def chunk_project(
 
     await db.flush()
 
+    # Generate embeddings for all new chunks
+    embed_count = 0
+    try:
+        from app.services.llm_service import llm_service
+
+        # Collect all chunks that need embeddings
+        all_chunks_q = (
+            select(Chunk)
+            .join(Document, Chunk.document_id == Document.id)
+            .where(Document.project_id == project_id, Chunk.embedding.is_(None))
+        )
+        all_chunks_result = await db.execute(all_chunks_q)
+        chunks_to_embed = all_chunks_result.scalars().all()
+
+        if chunks_to_embed:
+            # Batch embed (max 100 at a time to avoid token limits)
+            batch_size = 100
+            for i in range(0, len(chunks_to_embed), batch_size):
+                batch = chunks_to_embed[i:i + batch_size]
+                texts = [c.text for c in batch]
+                embeddings = await llm_service.embed(texts)
+                for chunk, embedding in zip(batch, embeddings):
+                    chunk.embedding = embedding
+                    db.add(chunk)
+                embed_count += len(batch)
+
+            await db.flush()
+            logger.info("embeddings_generated", project_id=str(project_id), count=embed_count)
+    except Exception as e:
+        logger.warning("embedding_generation_failed", error=str(e))
+        # Chunking succeeded, embeddings failed — still usable for keyword search
+
     # Update project stats
     await _update_project_stats(db, project_id)
 
     return {
         "total_chunks": total_new_chunks,
+        "embedded_chunks": embed_count,
         "config": {"method": method, "chunk_size": chunk_size, "overlap": overlap},
         "files": results,
     }
