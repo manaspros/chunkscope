@@ -21,6 +21,7 @@ from app.api.v1 import (
     preview_router,
     pipeline_routes,
     projects_router,
+    demo_router,
     query_router,
     rerank_router,
     suggestions_router,
@@ -48,4 +49,5 @@ api_router.include_router(suggestions_router, tags=["Suggestions"])
 api_router.include_router(export_router, tags=["Code Export"])
 api_router.include_router(cost_router, tags=["Cost Calculator"])
 api_router.include_router(projects_router, tags=["Projects"])
+api_router.include_router(demo_router)
 api_router.include_router(guide_router, tags=["Strategy Guide"])

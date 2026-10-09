@@ -12,7 +12,7 @@ from sqlalchemy import func, select, text
 import json
 import asyncio
 import os
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 from app.core.errors import BadRequestError, NotFoundError
 from app.core.logging import get_logger
@@ -182,7 +182,12 @@ def _chunk_document_sync(file_path: str, extracted_text: str, method: str, chunk
 
 
 # Process pool for CPU-bound work (text extraction + chunking)
-_process_pool = ProcessPoolExecutor(max_workers=max(1, os.cpu_count() - 1))
+# Serverless (Vercel/Lambda) has no /dev/shm, so multiprocessing semaphores fail: use threads there.
+_process_pool = (
+    ThreadPoolExecutor(max_workers=4)
+    if os.getenv("VERCEL")
+    else ProcessPoolExecutor(max_workers=max(1, (os.cpu_count() or 2) - 1))
+)
 
 
 @router.post("/{pipeline_id}/execute-step")

@@ -1,10 +1,32 @@
-import spacy
+from __future__ import annotations
+try:  # heavy optional dep: absent in the slim Vercel deployment
+    import spacy
+except ImportError:  # pragma: no cover
+    spacy = None
 from typing import List, Dict, Any, Optional
 from app.schemas.chunk import ChunkingConfig
 from app.core.logging import get_logger
 from .base import BaseChunker
 
 logger = get_logger(__name__)
+
+class _Span:
+    def __init__(self, start_char: int, end_char: int):
+        self.start_char, self.end_char = start_char, end_char
+
+
+class _RegexDoc:
+    def __init__(self, text: str):
+        import re
+        self.sents = [_Span(m.start(), m.end()) for m in re.finditer(r"[^.!?
+]+(?:[.!?]+|
+|$)\s*", text) if m.group().strip()]
+
+
+def _regex_nlp(text: str) -> _RegexDoc:
+    """Fallback sentence splitter used when spaCy is not installed (slim Vercel build)."""
+    return _RegexDoc(text)
+
 
 class SentenceWindowChunker(BaseChunker):
     """
@@ -19,6 +41,9 @@ class SentenceWindowChunker(BaseChunker):
 
     def _ensure_spacy_loaded(self):
         """Lazy load Spacy model."""
+        if spacy is None:
+            SentenceWindowChunker._nlp_instance = _regex_nlp
+            return
         if SentenceWindowChunker._nlp_instance is None:
             try:
                 SentenceWindowChunker._nlp_instance = spacy.load("en_core_web_sm")

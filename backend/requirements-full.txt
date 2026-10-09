@@ -1,0 +1,16 @@
+# Full local stack: slim runtime deps + heavy ML (semantic chunking, local embeddings).
+# Used by the Dockerfile and for local development. The Vercel deploy uses requirements.txt only.
+-r requirements.txt
+
+sentence-transformers>=2.3.0
+spacy>=3.7.0
+transformers>=4.35.0
+torch>=2.1.0
+python-socketio>=5.10.0
+
+# Testing / dev tools
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+black>=24.1.0
+ruff>=0.1.0

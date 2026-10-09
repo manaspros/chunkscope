@@ -7,7 +7,10 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional
 import numpy as np
-from transformers import pipeline
+try:
+    from transformers import pipeline
+except ImportError:  # slim deployment: heuristic analysis only
+    pipeline = None
 
 from app.core.logging import get_logger
 from app.services.pdf_processor import pdf_processor
@@ -718,6 +721,8 @@ class DocumentAnalyzer:
         Returns:
             tuple of (document_type, confidence_score)
         """
+        if pipeline is None:  # slim deployment: no zero-shot model, rely on heuristics
+            return "general", 0.5
         self._ensure_initialized()
         
         categories = [

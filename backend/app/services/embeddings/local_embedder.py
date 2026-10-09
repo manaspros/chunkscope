@@ -1,8 +1,12 @@
+from __future__ import annotations
 import logging
 import asyncio
 from typing import List, Optional
 from app.services.embeddings.base import BaseEmbedder
-from sentence_transformers import SentenceTransformer
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:  # pragma: no cover
+    SentenceTransformer = None
 
 logger = logging.getLogger(__name__)
 

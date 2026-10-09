@@ -4,7 +4,7 @@ import React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useConfigStore } from "@/stores/useConfigStore"
-import { analyzerApi } from "@/lib/api"
+import { analyzerApi, apiClient } from "@/lib/api"
 import { ArrowRight, Database, Github, Search, Eye, GitBranch, Layers, Cpu, FolderPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -48,6 +48,20 @@ export default function Home() {
             })
         } finally {
             setIsAnalyzing(false)
+        }
+    }
+
+    const [isSeeding, setIsSeeding] = React.useState(false)
+    const handleTrySample = async () => {
+        setIsSeeding(true)
+        try {
+            const { data } = await apiClient.post('/api/v1/demo/seed')
+            router.push(`/projects/${data.project_id}`)
+        } catch (error) {
+            console.error("Sample seed failed:", error)
+            toast({ title: "Sample unavailable", description: "Could not load the sample project.", variant: "destructive" })
+        } finally {
+            setIsSeeding(false)
         }
     }
 
@@ -171,6 +185,14 @@ export default function Home() {
 
                         {/* CTAs */}
                         <div className="flex flex-col sm:flex-row gap-5 justify-center pt-8">
+                            <button
+                                onClick={handleTrySample}
+                                disabled={isSeeding}
+                                className="group relative px-10 py-3.5 bg-amber-600 text-white rounded-full font-black text-[9px] uppercase tracking-[0.25em] hover:bg-amber-700 active:scale-95 transition-all flex items-center justify-center gap-3 shadow-sm disabled:opacity-60"
+                            >
+                                <Database className="w-3.5 h-3.5" />
+                                {isSeeding ? "Loading sample..." : "Try the sample"}
+                            </button>
                             <Link
                                 href="/projects"
                                 className="group relative px-10 py-3.5 bg-gray-900 text-white rounded-full font-black text-[9px] uppercase tracking-[0.25em] hover:bg-gray-800 active:scale-95 transition-all flex items-center justify-center gap-3 shadow-sm"

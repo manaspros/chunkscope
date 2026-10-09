@@ -20,6 +20,7 @@ from app.api.v1.query import router as query_router
 from app.api.v1.guide import router as guide_router
 from app.api.v1.suggestions import router as suggestions_router
 from app.api.v1.projects import router as projects_router
+from app.api.v1.demo import router as demo_router
 
 __all__ = [
     "analysis_router",
@@ -38,6 +39,7 @@ __all__ = [
     "presets_router",
     "preview_router",
     "projects_router",
+    "demo_router",
     "query_router",
     "rerank_router",
     "suggestions_router",

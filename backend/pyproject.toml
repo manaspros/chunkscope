@@ -31,10 +31,6 @@ dependencies = [
     # LLM (unified provider access)
     "litellm>=1.30.0",
 
-    # LangChain & AI
-    "langchain>=0.1.0",
-    "langchain-openai>=0.0.5",
-    "langchain-community>=0.0.10",
     "openai>=1.10.0",
 
     # Document Processing
@@ -42,21 +38,25 @@ dependencies = [
     "python-docx>=0.8.11",
     "python-multipart>=0.0.6",
     "aiofiles>=23.2.1",
-    "sentence-transformers>=2.3.0",
     "cohere>=5.20.0",
     "rank-bm25>=0.2.2",
-    "spacy>=3.7.0",
     "numpy>=1.26.0",
 
-    # Document Analysis
-    "transformers>=4.35.0",
-    "torch>=2.1.0",
-
-    # WebSocket
-    "python-socketio>=5.10.0",
 ]
 
 [project.optional-dependencies]
+# Heavy local-ML stack (semantic chunking, local embeddings, zero-shot doc classification).
+# NOT installed on the Vercel deployment (bundle-size limit); `pip install -e ".[ml]"` locally.
+ml = [
+    "sentence-transformers>=2.3.0",
+    "spacy>=3.7.0",
+    "transformers>=4.35.0",
+    "torch>=2.1.0",
+    "langchain>=0.1.0",
+    "langchain-openai>=0.0.5",
+    "langchain-community>=0.0.10",
+    "python-socketio>=5.10.0",
+]
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.23.0",
@@ -79,3 +79,6 @@ select = ["E", "F", "I"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

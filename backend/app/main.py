@@ -2,6 +2,7 @@
 ChunkScope FastAPI Application Factory
 """
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
@@ -9,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api import api_router
 from app.config import settings
+from app.core.guard import add_public_guard
 from app.core import close_db, configure_logging, configure_middleware, init_db
 
 
@@ -44,9 +46,10 @@ def create_app() -> FastAPI:
     
     # Configure middleware (CORS, error handling, logging)
     configure_middleware(app)
+    add_public_guard(app)
     
     # Mount static files
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+    app.mount("/static", StaticFiles(directory=str(Path(__file__).resolve().parent.parent / "static")), name="static")
     
     # Include API routers
     app.include_router(api_router)

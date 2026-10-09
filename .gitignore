@@ -64,3 +64,11 @@ test_*.log
 *_error.log
 *_output.txt
 *_output.log
+
+.vercel
+.env*.local
+
+# Local DBs / never commit
+*.db
+*.sqlite
+*.sqlite3

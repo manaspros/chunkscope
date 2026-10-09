@@ -38,3 +38,4 @@ class QueryResponse(BaseModel):
     results: List[ChunkWithScore]
     retrieval_method: str
     total_results: int
+    demo_fallback: bool = False  # True when no embedding key: keyword search was used instead

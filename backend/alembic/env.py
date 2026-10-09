@@ -19,7 +19,8 @@ from app.config import settings
 config = context.config
 
 # Override sqlalchemy.url from our central settings (fixing the leak)
-config.set_main_option("sqlalchemy.url", settings.database_url)
+_sync_url = settings.database_url.replace("postgresql://", "postgresql+psycopg2://", 1).replace("+asyncpg", "+psycopg2")
+config.set_main_option("sqlalchemy.url", _sync_url.replace("%", "%%"))
 
 # Setup logging
 if config.config_file_name is not None:

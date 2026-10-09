@@ -2,6 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.config import settings
 from app.dependencies import DbSession
 from app.schemas.query import QueryRequest, QueryResponse, ChunkWithScore
 from app.services.llm_service import llm_service
@@ -15,6 +16,17 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 router = APIRouter(prefix="/query", tags=["Query"])
 
+async def _embed_query(text: str):
+    """Embed a query, or return None (no key / provider error) so callers can fall back to keyword search."""
+    if not (settings.litellm_api_key or settings.openai_api_key):
+        return None
+    try:
+        return (await llm_service.embed([text]))[0]
+    except Exception as e:
+        logger.warning(f"Embedding failed, falling back to keyword search: {e}")
+        return None
+
+
 @router.post("/", response_model=QueryResponse)
 async def query_pipeline(
     request: QueryRequest,
@@ -25,13 +37,28 @@ async def query_pipeline(
     """
     try:
         # 1. Get query embedding via LiteLLM (uses LITELLM_API_KEY)
-        embeddings = await llm_service.embed([request.query])
-        query_embedding = embeddings[0]
+        # Demo fallback: with no embedding key (or a failing one) degrade to
+        # Postgres full-text keyword search so the hosted prototype still answers.
+        query_embedding = None
+        demo_fallback = False
+        if settings.litellm_api_key or settings.openai_api_key:
+            try:
+                embeddings = await llm_service.embed([request.query])
+                query_embedding = embeddings[0]
+            except Exception as embed_err:
+                logger.warning(f"Embedding failed, falling back to keyword search: {embed_err}")
+                demo_fallback = True
+        else:
+            demo_fallback = True
 
         # 2. Select retriever
         retriever: BaseRetriever = None
 
-        if request.retrieval_method == "hybrid":
+        if demo_fallback:
+            retriever = HybridRetriever(db, alpha=0.0)
+            request.alpha = 0.0
+            request.augmentation_method = None
+        elif request.retrieval_method == "hybrid":
             retriever = HybridRetriever(db, alpha=request.alpha)
         elif request.retrieval_method == "mmr":
             retriever = MMRRetriever(db, lambda_mult=request.lambda_mult)
@@ -82,8 +109,9 @@ async def query_pipeline(
         return QueryResponse(
             query=request.query,
             results=formatted_results,
-            retrieval_method=request.retrieval_method,
-            total_results=len(formatted_results)
+            retrieval_method="keyword" if demo_fallback else request.retrieval_method,
+            total_results=len(formatted_results),
+            demo_fallback=demo_fallback,
         )
 
     except Exception as e:
@@ -104,8 +132,12 @@ async def enriched_query(
 
     # 1. Embedding phase
     t0 = time.perf_counter()
-    embeddings = await llm_service.embed([request.query])
-    query_embedding = embeddings[0]
+    query_embedding = await _embed_query(request.query)
+    if query_embedding is None:
+        metrics["demo_fallback"] = True
+        request.retrieval_method = "keyword"
+        request.alpha = 0.0
+        query_embedding = []
     t1 = time.perf_counter()
     metrics["embedding_latency_ms"] = round((t1 - t0) * 1000, 1)
     metrics["embedding_dimensions"] = len(query_embedding)
@@ -261,8 +293,15 @@ async def pipeline_test(
 
     # ── Step 1: Embed query ──
     t0 = time.perf_counter()
-    embeddings = await llm_service.embed([request.query])
-    query_embedding = embeddings[0]
+    query_embedding = await _embed_query(request.query)
+    demo_fallback = query_embedding is None
+    if demo_fallback:
+        metrics["demo_fallback"] = True
+        query_embedding = []
+        retriever_cfg = {**retriever_cfg, "strategy": "keyword", "alpha": 0.0}
+        augmentation_cfg = {}
+        if not (settings.litellm_api_key or settings.openai_api_key):
+            llm_cfg = {}
     t1 = time.perf_counter()
     metrics["embedding_ms"] = round((t1 - t0) * 1000, 1)
     metrics["embedding_dims"] = len(query_embedding)

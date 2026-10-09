@@ -1,9 +1,16 @@
+from __future__ import annotations
 import threading
 
 import numpy as np
-import spacy
+try:  # heavy optional dep: absent in the slim Vercel deployment
+    import spacy
+except ImportError:  # pragma: no cover
+    spacy = None
 from typing import List, Optional, Dict, Any
-from sentence_transformers import SentenceTransformer
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:  # pragma: no cover
+    SentenceTransformer = None
 from app.schemas.chunk import ChunkingConfig
 from app.core.logging import get_logger
 from app.core.errors import AppException
@@ -29,6 +36,8 @@ class SemanticChunker(BaseChunker):
 
     def _ensure_model_loaded(self):
         """Lazy load the embedding model with thread-safe double-checked locking."""
+        if SentenceTransformer is None or spacy is None:
+            raise AppException("Semantic/sentence-window chunking needs spaCy + sentence-transformers, which are not installed in the slim Vercel build. Use recursive, paragraph, heading_based or code_aware, or run the full backend locally.", 501)
         if SemanticChunker._model_instance is None:
             with SemanticChunker._model_lock:
                 if SemanticChunker._model_instance is None:
@@ -41,6 +50,8 @@ class SemanticChunker(BaseChunker):
 
     def _ensure_spacy_loaded(self):
         """Lazy load Spacy model with thread-safe double-checked locking."""
+        if spacy is None:
+            raise AppException("Semantic/sentence-window chunking needs spaCy + sentence-transformers, which are not installed in the slim Vercel build. Use recursive, paragraph, heading_based or code_aware, or run the full backend locally.", 501)
         if SemanticChunker._nlp_instance is None:
             with SemanticChunker._nlp_lock:
                 if SemanticChunker._nlp_instance is None:

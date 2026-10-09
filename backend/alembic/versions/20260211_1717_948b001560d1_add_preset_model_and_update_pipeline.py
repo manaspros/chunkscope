@@ -54,7 +54,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_presets")),
     )
     op.create_index(op.f("ix_presets_category"), "presets", ["category"], unique=False)
-    op.drop_table("playing_with_neon")
+    op.execute("DROP TABLE IF EXISTS playing_with_neon")
     op.alter_column(
         "chunks",
         "metadata",

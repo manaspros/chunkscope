@@ -25,11 +25,9 @@ def get_async_database_url() -> str:
     elif url.startswith("sqlite://") and "aiosqlite" not in url:
         url = url.replace("sqlite://", "sqlite+aiosqlite://", 1)
     
-    # Remove sslmode from URL (asyncpg handles it differently)
-    if "?sslmode=" in url:
-        url = url.split("?sslmode=")[0]
-    elif "&sslmode=" in url:
-        url = url.replace("&sslmode=require", "").replace("&sslmode=prefer", "")
+    # Drop libpq-only query params (sslmode, channel_binding, ...): asyncpg rejects
+    # them. SSL for Neon is handled via connect_args below.
+    url = url.split("?")[0]
     
     return url
 
@@ -52,7 +50,9 @@ if not settings.database_url.startswith("sqlite"):
 
 # Add SSL context for Neon/PostgreSQL if needed
 if "neon.tech" in settings.database_url:
-    engine_kwargs["connect_args"] = {"ssl": ssl_context}
+    # statement_cache_size=0: Neon's pooled endpoint is PgBouncer (transaction mode)
+    engine_kwargs["connect_args"] = {"ssl": ssl_context, "statement_cache_size": 0}
+    engine_kwargs["pool_pre_ping"] = True
 
 # Create async engine
 engine = create_async_engine(
